@@ -1,0 +1,15 @@
+﻿@using TKGroup.Settings
+@page "/settings"
+@inject SettingsService SettingService
+    <div class="container-fluid" style="overflow:scroll;">
+        <TKGroup.Settings.Pages.SettingsComponent Settings="LogicSettings"></TKGroup.Settings.Pages.SettingsComponent>
+    </div>
+@if(!IsAuthorised){
+<Authorise Caller="this" OnAuthorisedCallback="async () => {  LogicSettings = await SettingService.GetAllSettings(); IsAuthorised = true; }"></Authorise>
+}
+@code {
+    List<Setting> LogicSettings { get; set; }
+    bool IsAuthorised { get; set; }
+
+
+}

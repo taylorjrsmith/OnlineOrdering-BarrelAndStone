@@ -1,0 +1,275 @@
+﻿@page "/station/{stationName}"
+@namespace BlazingPizza.Pages
+@using TKGroup.InHouseOrder.Data
+@using TKGroup.InHouseOrder.Common.Menu
+@using TKGroup.InHouseOrder.Common.Order
+@using Newtonsoft.Json
+@using Microsoft.Extensions.Configuration
+@using System.Threading
+@implements IDisposable
+@inject OrderAPIService apiService
+@inject InHouseOrderContext context
+@inject BlazorApp1.Data.OrderService  orderService
+@inject IJSRuntime js
+@inject Microsoft.Extensions.Configuration.IConfiguration config
+@inject BlazorApp1.Data.OrderState OrderState
+@inject NavigationManager NavigationManager
+
+
+<div class="container-fluid mt-3" style="overflow-y:scroll;">
+    <p class="badge badge-primary" style="
+    font-size: 20px;
+">Last Checked @LastCheckedDate</p>
+<div class="row" style="margin-left:0 !important; margin-right:0 !important;">
+    <div class="card-columns" style="display:flex;">
+        @if (OrdersInProgress != null)
+        {
+
+            @foreach (var o in OrdersInProgress)
+            {
+
+                var collectionIds = new List<int>();
+
+                o.OrderItems.RemoveAll(a => a.Product.StationId != stationId);
+
+                if (o.OrderItems.Count == 0)
+                    continue;
+
+                <div class="card" id="@o.OrderId">
+                    <div class="card-body">
+                        <h5 style="
+    position: absolute;
+    background: lightgray;
+    color: white;
+    padding: 5px;
+    right: 0;
+    top: 0;
+">
+
+                            Table @o.TableNumber
+                        </h5>
+                        <span style="position:absolute; left:0; top:0;">@o.CreatedDate.ToString("HH:mm")</span>
+                        <div class="mt-3"></div>
+                        <ul style="padding-left:5px;">
+
+                            @foreach (var item in o.OrderItems.OrderBy(a => a.Product.CollectionId))
+                            {
+                                @if (!collectionIds.Any(a => a == item.Product.CollectionId))
+                                {
+                                    collectionIds.Add(item.Product.CollectionId);
+                                    <li style="list-style:none; font-weight:bold;">@Collections.FirstOrDefault(a => a.Id == item.Product.CollectionId).Name</li>
+                                    <hr />
+                                }
+                                for (int i = 0; i < item.Quantity; i++)
+                                {
+
+                                    <li style="list-style:none; font-weight:500;">@item.Product.Name</li>
+                                    <li style="list-style:none;">
+                                        <ul>
+                                            @foreach (var opt in item.orderItemOptions)
+                                            {
+                                                <li style="font-weight:300;">
+                                                    @opt.ProductOption.Name
+                                                </li>
+                                            }
+                                            @foreach (var mod in item.OrderItemModifiers)
+                                            {
+                                                <li style="font-weight:300">
+                                                    @mod.Modifier.Product.Name
+                                                </li>
+                                            }
+                                        </ul>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                        <i>@o.SpecialRequests</i>
+
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-warning" @onclick="() => RemoveTicket(o.OrderId)">Clear Ticket</button>
+                        <button class="btn btn-primary" onclick="PrintElement('@o.OrderId')">Print</button>
+                    </div>
+                </div>
+            }
+
+
+        }
+        @if (Orders != null && stationName.ToLower().Trim() == "kitchen")
+        {
+            @foreach (var order in Orders.OrderBy(a => a.Order.CollectionDate))
+            {
+
+
+                <div class="card mt-2" style="max-width:400px;">
+                    <div class="card-header">
+                        @{
+                            var diff = order.Order.CollectionDate.Subtract(DateTime.Now);
+                            var res = String.Format("{0}:{1}:{2}", diff.Hours, diff.Minutes, diff.Seconds);
+                            var multipleOrders = Orders.Any(a => a.Order.CollectionDate == order.Order.CollectionDate && a.Order.OrderId != order.Order.OrderId);
+                        }
+                        @if (multipleOrders)
+                        {
+                            <h4>2 orders at the same time</h4>
+                        }
+                        <h1 style="font-size:18px;">
+                            @order.Order.CollectionDate.ToString("HH:mm") - @order.Order.Name - @order.Order.Number
+                            <span style="
+    /* float: right; */
+    display:inline-block;
+    float:right;
+    right: 10px;
+    top: 10px;
+    background: white;
+    padding: 5px;
+    border-radius: 5px;
+    color: #004969 ;
+">  @res</span>
+</h1>
+</div>
+<div class="card-body">
+    <div class="float-right">
+        <div class="row mb-2">
+            <div class="col">
+                <div class="slice-contents" style="
+    float: right;
+">
+                    @order.Order.Pizzas.Where(a => a.Size == 8 && !a.IsSide).Count() x
+                    <span class="fas fa-pizza-slice" style="
+    margin-right: 10px;
+"> </span>
+                    @order.Order.Pizzas.Where(a => a.Size == 12 && !a.IsSide).Count() x
+                    <span class="fas fa-2x fa-pizza-slice"> </span>
+
+                </div>
+            </div>
+        </div>
+
+
+
+    </div>
+    <OrderReview Order="@order.Order" />
+</div>
+<div class="card-footer">
+    <button @onclick="() => MarkOrderAsDone(order.Order)" class="btn btn-primary">Mark as done</button>
+    <button class="btn btn-danger float-right" @onclick="() => CancelOrder(order.Order)">Cancel</button>
+    <button class="btn float-right" @onclick="() => ModifyOrder(order.Order)">Modify Order</button>
+</div>
+</div>
+
+}
+
+        }
+    </div>
+</div>
+</div>
+
+@if (!IsAuthorised)
+{
+    <Authorise Caller="this" OnAuthorisedCallback="async () => {
+        PollForUpdates(); IsAuthorised = true; Orders = await orderService.GetOrders(CurrentDate.Date.Day, CurrentDate.Month, CurrentDate.Year);}"></Authorise>
+}
+
+@code {
+    [Parameter]
+    public string stationName { get; set; }
+    public List<TKGroup.InHouseOrder.Common.Order.Order> OrdersInProgress { get; set; }
+    public bool IsAuthorised { get; set; }
+    CancellationTokenSource pollingCancellationToken;
+    public int stationId { get; set; }
+    public string LastCheckedDate { get; set; }
+    public List<Guid> OrdersSeen { get; set; } = new List<Guid>();
+    public List<TKGroup.InHouseOrder.Menu.Common.Collection> Collections { get; set; }
+    public List<TKGroup.InHouseOrder.Common.Stations.StationClearRequest> clearRequests { get; set; }
+    List<OrderWithStatus> Orders { get; set; }
+    DateTime CurrentDate { get; set; } = DateTime.Now;
+    public int additionalDelay { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        stationId = context.Stations.FirstOrDefault(a => a.Name.ToLower() == stationName.ToLower()).Id;
+        Collections = context.Collections.ToList();
+    }
+
+    private async Task RemoveTicket(Guid orderId)
+    {
+        OrdersInProgress.Remove(OrdersInProgress.FirstOrDefault(a => a.OrderId == orderId));
+        var stationClearRequest = new TKGroup.InHouseOrder.Common.Stations.StationClearRequest() { OrderId = orderId, RequestDate = DateTime.Now, StationId = stationId };
+        context.Add(stationClearRequest);
+        additionalDelay = 2000;
+        await context.SaveChangesAsync();
+    }
+
+    async Task MarkOrderAsDone(BlazingPizza.Order order)
+    {
+        var completeOrder = Orders.FirstOrDefault(a => a.Order.OrderId == order.OrderId);
+        completeOrder.StatusText = "Done";
+        StateHasChanged();
+        await orderService.MarkOrderAsDone(order.OrderId);
+        Orders.Remove(completeOrder);
+    }
+
+    protected async Task CancelOrder(BlazingPizza.Order order)
+    {
+        if (await js.Confirm($"Are you sure you want to cancel {order.Name}'s order?"))
+        {
+            await orderService.CancelOrder(order.OrderId, order.Password);
+        }
+    }
+
+    protected async Task ModifyOrder(BlazingPizza.Order order)
+    {
+        OrderState.ReplaceOrder(order);
+        NavigationManager.NavigateTo("/");
+    }
+
+    private async void Print(Guid orderId)
+    {
+        js.InvokeVoidAsync("PrintElement", orderId.ToString());
+    }
+
+    private async Task BindToUI()
+    {
+        clearRequests = context.StationClearRequests.Where(a => a.RequestDate.Date == DateTime.Now.Date && a.StationId == stationId).ToList();
+        OrdersInProgress = await apiService.GetOrdersInProgress();
+        if (OrdersSeen.Count == 0)
+        {
+            OrdersSeen = OrdersInProgress.Select(a => a.OrderId).ToList();
+        }
+        if (OrdersInProgress.Any(a => a.OrderItems.Where(a => !OrdersSeen.Any(b => b == a.OrderId)).Select(a => a.Product.StationId).Any(a => a == stationId)) && OrdersInProgress.Select(a => a.OrderId).Any(b => !OrdersSeen.Any(c => c == b)))
+        {
+            await js.InvokeVoidAsync("notify");
+            OrdersSeen = OrdersInProgress.Select(a => a.OrderId).ToList();
+        }
+        OrdersInProgress = OrdersInProgress.Where(a => !clearRequests.Any(b => b.OrderId == a.OrderId)).ToList();
+        Orders = await orderService.GetOrders(CurrentDate.Date.Day, CurrentDate.Date.Month, CurrentDate.Date.Year);
+        Orders = Orders.Where(a => a.Order.Status != "Done").ToList();
+        StateHasChanged();
+    }
+
+    private async void PollForUpdates()
+    {
+        pollingCancellationToken = new CancellationTokenSource();
+        while (!pollingCancellationToken.IsCancellationRequested)
+        {
+            await Task.Delay(additionalDelay);
+            await BindToUI();
+            additionalDelay = 0;
+            LastCheckedDate = DateTime.Now.ToString("HH:mm:ss");
+            StateHasChanged();
+            var pollingInterval = config.GetValue<int>("pollingInterval");
+            await Task.Delay(pollingInterval);
+        }
+
+
+    }
+
+
+
+
+
+    void IDisposable.Dispose()
+    {
+        pollingCancellationToken?.Cancel();
+    }
+}

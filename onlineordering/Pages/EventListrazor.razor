@@ -1,0 +1,55 @@
+﻿@page "/events"
+@inject Data.PizzaStoreContext context
+
+
+
+<div class="main">
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>Special events</h1>
+            </div>
+
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th>Event Name</th>
+                        `
+                        <th>State</th>
+                        <th>Options</th>
+                    </tr>
+                    @foreach (var e in AllEvents)
+                    {
+                        <tr>
+                            <td>
+                                @e.CategoryName
+                            </td>
+                            <td>
+                                @(e.EventDate < DateTime.Now.Date ? "expired" : "scheduled")
+                            </td>
+                            <td>
+                                <a href="/events/@e.CategoryName">Edit time</a>
+                            </td>
+                        </tr>
+
+                    }
+                </table>
+            </div>
+         
+        </div>
+
+    </div>
+
+</div>
+
+
+
+@code {
+    List<SpecialEventCategory> AllEvents { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        AllEvents = context.SpecialEventCategories.ToList();
+    }
+}

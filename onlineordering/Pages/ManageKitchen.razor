@@ -1,0 +1,140 @@
+﻿@page "/kitchen/manage"
+@inject BlazorApp1.Data.ManagementService ManagementService
+@inject NavigationManager NavManager
+@inject IJSRuntime Js
+
+<div class="sidebar">
+<ul>
+    <li><a href="/kitchen/menu">Menu</a></li>
+    <li><a href="/kitchen">Kitchen</a></li>
+    <li><a href="/kitchen/settings">Settings</a></li>
+</ul>
+</div>
+<div class="main">
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>Menu</h1>
+                <a class="btn btn-primary float-right" href="/menu/0">Add new item</a>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th>Name</th>
+                        <th>8" Price</th>
+                        <th>12" Price</th>
+                        <th>Options</th>
+                    </tr>
+                    @foreach (var special in PizzaSpecials)
+                    {
+                        <tr>
+                            <td>@special.Name</td>
+                            <td>@special.EightInchPrice.ToString("C")</td>
+                            <td>@special.TwelveInchPrice.ToString("C")</td>
+
+                            <td>
+                                @if (special.IsEnabled)
+                                {
+                                    <button class="btn btn-warning" @onclick="() => TriggerEnabled(special)">Disable</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-success" @onclick="() => TriggerEnabled(special)">Enable</button>
+                                }
+
+
+                                | <button class="btn btn-primary" @onclick="@(() => { NavManager.NavigateTo($"/menu/{special.Id}"); })">Edit menu item</button>
+                                | <button class="btn btn-danger" @onclick="() => DeleteSpecial(special)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </table>
+
+                <table class="table">
+                   <tr>
+                       <th>Name</th>
+                       <th>Price</th>
+                       <th>Options</th>
+                   </tr>
+                    @foreach(var drink in Drinks)
+                    {
+                        <tr>
+                            <td>@drink.DrinkName</td>
+                            <td>@drink.GetFormattedPrice</td>
+                            <td><button @onclick="() => DeleteDrink(drink)">Remove</button>  <a href="@($"/drink/{drink.Id}")" class="btn btn-primary">Edit</a></td>
+                        </tr>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@if (!IsAuthorised)
+{
+<Authorise OnAuthorisedCallback="async () => { PizzaSpecials = await ManagementService.GetPizzaSpecials(); Drinks = await ManagementService.GetDrinks(); IsAuthorised = true; }" Caller="this"></Authorise>
+}
+@code {
+    List<PizzaSpecial> PizzaSpecials = new List<PizzaSpecial>();
+    List<Drink> Drinks = new List<Drink>();
+    bool IsAuthorised { get; set; }
+    string password { get; set; }
+
+    //protected override async Task OnAfterRenderAsync(bool firstRender)
+    //{
+
+
+    //    while (!IsAuthorised)
+    //    {
+    //        if (await Js.GetLocalStorageValue("kitchenPassword") == "BetterThanDominos")
+    //        {
+    //            password = "BetterThanDominos";
+    //            IsAuthorised = true;
+    //        }
+    //        if (!IsAuthorised)
+    //            password = await Js.Prompt("Please type the kitchen password");
+    //        if (password == "BetterThanDominos")
+    //        {
+    //            IsAuthorised = true;
+    //        }
+
+    //    }
+
+    //    if (IsAuthorised)
+    //        if (password == "BetterThanDominos")
+    //        {
+    //            PizzaSpecials = await ManagementService.GetPizzaSpecials();
+    //            IsAuthorised = true;
+    //            Js.SetLocalStorageValue("kitchenPassword", "BetterThanDominos");
+    //            StateHasChanged();
+    //        }
+    //}
+
+    async Task UpdateModel(PizzaSpecial special)
+    {
+        await ManagementService.UpdateSpecial(special);
+    }
+
+    async Task TriggerEnabled(PizzaSpecial special)
+    {
+        special.IsEnabled = !special.IsEnabled;
+        await UpdateModel(special);
+    }
+
+    async Task DeleteSpecial(PizzaSpecial special)
+    {
+        if (await Js.Confirm($"are you sure you want to delete {special.Name}?"))
+        {
+            await ManagementService.DeleteSpecial(special);
+            PizzaSpecials.Remove(special);
+        }
+    }
+
+    async Task DeleteDrink(Drink drink)
+    {
+        if(await Js.Confirm($"are you sure you want to delete {drink.DrinkName}?"))
+        {
+            await ManagementService.DeleteDrink(drink);
+            Drinks.Remove(drink);
+        }
+    }
+}

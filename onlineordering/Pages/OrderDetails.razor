@@ -1,0 +1,169 @@
+﻿@page "/myorders/{orderId:int}/{orderpassword}"
+@using System.Threading
+@inject NavigationManager NavigationManager
+@inject Data.OrderState OrderState
+@inject Data.OrderService orderService
+@implements IDisposable
+
+@{ 
+    var message = OrderState.IsDelivery ? "Thank you for your order a member of the team will call you approximately 30 mins prior to your delivery slot where payment options will be discussed. You can pay by card over the phone or by cash upon delivery. Social distancing rules will apply" : "Due to the current coronavirus situation we request that you remain in the Gate car park until a member of staff comes out with your order. We can accept contactless or cash at the collection point in the car park. Our staff are aware of social distancing and your collection from the pub will fully conform to this.  We accept cancellations and modifications up to 2 hours before your collection slot.";
+}
+<div class="main">
+    @if (invalidOrder)
+    {
+        <h2>Nope</h2>
+        <p>Sorry, this order could not be loaded.</p>
+    }
+    else if (orderWithStatus == null)
+    {
+        <text>Loading...</text>
+    }
+    else
+    {
+        <div class="track-order">
+            <div class="track-order-title">
+                <h2>
+                    Order placed @orderWithStatus.Order.CreatedTime.ToLongDateString()
+                </h2>
+                <p class="ml-auto mb-0">
+                    Status: <strong>@orderWithStatus.StatusText</strong>
+                </p>
+            </div>
+            <div class="track-order-body">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-6">
+                            @if (!isCancelled)
+                            {
+                                <h1 class="text-center" style="margin-top:10px;"> Thank you for your order!</h1>
+                                <div style="
+    /* margin-left: 45%; */
+    /* display: flex; */
+    text-align: center;
+    margin-top: 20px;
+">
+                                    <img src="https://scontent-lht6-1.xx.fbcdn.net/v/t1.0-9/94238470_3127483733949597_7803393576066351104_n.jpg?_nc_cat=103&_nc_sid=8024bb&_nc_oc=AQn7z35_sQ6krdkRxAa2C58Cwqs1RbjG2V9oF4ht8ldQL9YXe80nuf3PXdFg69Feo7Y&_nc_ht=scontent-lht6-1.xx&oh=e4b9381e66dd35ad12b36df78a435ab9&oe=5ECC93CB" style="width:100%" />
+                                </div>
+                                <h1 class="text-center mt-3">@orderWithStatus.Order.CollectionDate.ToString("HH:mm") @orderWithStatus.Order.CollectionDate.ToString("dd MMMM")</h1>
+
+                                <p style="
+    margin-left: 10px;
+    margin-top: 10px;
+    text-align: center;
+"> @message</p>
+                            }
+                            @if (isCancelled)
+                            {
+                                <h1 class="text-center" style="margin-top:10px;"> Your order has been cancelled</h1>
+                                <div style="
+    /* margin-left: 45%; */
+    /* display: flex; */
+    text-align: center;
+    margin-top: 20px;
+">
+                                    <img src="img/pizza-slice.svg" style="
+    background-color: red;
+    padding: 30px;
+    border-radius: 50%;
+">
+                                </div>
+
+                                <p style="
+    margin-left: 10px;
+    margin-top: 10px;
+    text-align: center;
+">We have successfully cancelled your order, we hope to see you again!</p>
+                            }
+                        </div>
+                        <div class="col-md-6">
+                            <div class="track-order-details">
+                                <OrderReview Order="orderWithStatus.Order" />
+                                @*@if (!isCancelled && (orderWithStatus.Order.CollectionDate > DateTime.Now.AddHours(2) || orderWithStatus.Order.CreatedTime.AddMinutes(10) < DateTime.Now))
+                                {
+                                    <button class="btn btn-danger" @onclick="() => CancelOrder()">Cancel</button>
+                                    <button class="btn" @onclick="() => ModifyOrder()">Modify Order</button>
+                                }
+                                else
+                                {
+                                    <p> You can no longer cancel or modify your order, we look forward to seeing you tonight!</p>
+                                }*@
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @*<div class="track-order-map">
+                        <Map Zoom="13" Markers="orderWithStatus.MapMarkers" />
+                    </div>*@
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+    [Parameter] public string OrderPassword { get; set; }
+    bool isCancelled { get; set; }
+
+    OrderWithStatus orderWithStatus;
+    bool invalidOrder;
+    CancellationTokenSource pollingCancellationToken;
+
+    protected override void OnParametersSet()
+    {
+        orderWithStatus = orderService.GetOrderWithStatus(OrderId, OrderPassword).Result;
+        // If we were already polling for a different order, stop doing so
+        pollingCancellationToken?.Cancel();
+
+        // Start a new poll loop
+        PollForUpdates();
+    }
+
+    protected async Task ModifyOrder()
+    {
+        OrderState.ReplaceOrder(orderWithStatus.Order);
+        NavigationManager.NavigateTo("/");
+    }
+
+    protected async Task CancelOrder()
+    {
+
+        await orderService.CancelOrder(OrderId, OrderPassword);
+        isCancelled = true;
+    }
+
+    private async void PollForUpdates()
+    {
+
+        pollingCancellationToken = new CancellationTokenSource();
+        while (!pollingCancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                if (isCancelled)
+                {
+                    pollingCancellationToken.Cancel();
+                    return;
+                }
+                invalidOrder = false;
+                orderWithStatus = await orderService.GetOrderWithStatus(OrderId, OrderPassword);
+            }
+            catch (Exception ex)
+            {
+                invalidOrder = true;
+                pollingCancellationToken.Cancel();
+                Console.Error.WriteLine(ex);
+            }
+
+            StateHasChanged();
+
+            await Task.Delay(4000);
+        }
+
+    }
+
+    void IDisposable.Dispose()
+    {
+        pollingCancellationToken?.Cancel();
+    }
+}

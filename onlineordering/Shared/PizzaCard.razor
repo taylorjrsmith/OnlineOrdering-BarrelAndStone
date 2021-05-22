@@ -1,0 +1,17 @@
+﻿@namespace TakeYourWay.Shared
+<ul class="pizza-cards">
+    <li class="lazyload" style="background:url('@Url'); background-size:cover !important;">
+        <div class="pizza-info">
+            <span class="title">@Special.Name</span>
+            @Special.Description
+            <span class="price">@(Special.IsSide ? "": "from") £@Special.GetFormattedBasePrice()</span>
+        </div>
+    </li>
+</ul>
+
+@code {
+    [Parameter]
+    public PizzaSpecial Special { get; set; }
+    [Parameter]
+    public string Url { get; set; }
+}

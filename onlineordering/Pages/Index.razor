@@ -1,0 +1,308 @@
+﻿@page "/"
+@inject Data.OrderState OrderState
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject Data.OrderService orderService
+@inject ISettingService settingsService
+@inject Data.PizzaStoreContext context
+
+@{
+    OrderState.IsDelivery = false;
+}
+<style>
+    .size-box__active {
+        color: white;
+        background-color: #004969;
+    }
+</style>
+<div class="d-block d-md-none" style="
+    width: 100%;
+    height: 50px;
+    background: #004969;
+    position: absolute;
+    bottom: 0;
+    z-index: 100;
+">
+    <div class="container">
+        <div class="row">
+            <div class="col-4">
+                <span class="price" style="
+    font-size: 30px;
+    color: white;
+">@OrderState.Order.GetFormattedTotalPrice()</span>
+</div>
+<div class="col-2" @onclick="() => TriggerCart()">
+    <i class="fas fa-shopping-basket" style="
+    font-size: 30px;
+    position: absolute;
+    top: 10px;
+    left: -20px;
+    color: white; margin-left:20px;
+">
+    </i>
+</div>
+<div class="col-offset-2 col-4" style="
+    /* position: relative; */
+    top: 7.5px;
+    /* float: right; */
+    margin-left: auto;
+    right: 15px;
+">
+    @if (ReachedMinimumOrder())
+    {
+        <a href="checkout" class="btn btn-primary" style="
+    background: white;
+    border: none;
+    color: #004969;
+">@(Order.OrderId == 0 ? "Order >" : "Modify order >")</a>
+    }
+    else
+    {
+        <p style="
+    color: white;
+    width: 150px;
+    position: relative;
+    right: 50px;
+    bottom: 5px;
+">Please reach minimum order</p>
+    }
+</div>
+</div>
+</div>
+</div>
+
+
+<div class="main">
+    <div class="container">
+        <p><strong>Have allergies? We advise before ordering food and drink, please text or call Ben on 07944572437 to hear about our ingredients.</strong></p>
+        @if (!string.IsNullOrEmpty(settingsService.GetSetting<string>("Notice", "").Result))
+        {
+            var notice = settingsService.GetSetting<string>("Notice", "").Result;
+            <p class="alert alert-info">@notice</p>
+        }
+    </div>
+    @if (!ReachedMinimumOrder())
+    {
+        <div class="alert alert-warning">Minimum order must be £12.50</div>
+    }
+    @if (!showCategoryPage)
+    {
+        <div style="white-space: nowrap; width:100%; min-height:100vh;">
+
+
+            @foreach (var category in Categories)
+            {
+                @if (!EventCategories.Any(a => a.PreorderByDate < DateTime.Now && a.CategoryName == category) || EventCategories.Any(a => a.PreorderByDate > DateTime.Now && a.CategoryName == category))
+                {
+                    <div class="js-collection-tile" style="height: 65px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px #ccc;
+        background: white;
+        width:100%;
+        position:relative;
+        margin-top:5px;
+" @onclick="() => setActiveCategory(category)">
+                        <div style="width:100%;height:100%; position:absolute;display:flex">
+                            <span class="" style="margin:auto; font-size:25px; color:var(--primary-color); position:relative;"><i></i> @category </span>
+                        </div>
+
+                    </div>
+                }
+            }
+        </div>
+    }
+    else
+    {
+        <button class="btn btn-primary mb-3" @onclick="() => { showCategoryPage = false; }">Back to menu</button>
+        <ul class="pizza-cards">
+            @if (specials != null)
+            {
+                @foreach (var special in specials.Where(a => !string.IsNullOrEmpty(a.Category) && a.Category.Split(",").Any(c => c == activeCategory)).OrderByDescending(a => a.Category.Split(",").OrderBy(d => d).Aggregate((next, current) => next + "," + current)))
+                {
+                    <li @onclick="@(() => OrderState.ShowConfigurePizzaDialog(special))" class="lazyload" data-bg="@special.ImageUrl">
+                        <div class="pizza-info">
+                            <span class="title">@special.Name</span>
+                            @special.Description
+                            <span class="price">@(special.IsSide ? "" : "from") £@special.GetFormattedBasePrice()</span>
+                        </div>
+                    </li>
+                }
+            }
+        </ul>
+    }
+    @if (showCategoryPage && activeCategory == "Drinks")
+    {
+        <ul class="pizza-cards">
+            @if (Drinks != null)
+            {
+                @foreach (var drink in Drinks)
+                {
+                    <li class="lazyload" data-bg="@drink.ImageUrl" @onclick="@(() => OrderState.ShowConfigureDrinkDialog(drink))">
+                        <div class="pizza-info">
+                            <span class="title">@drink.DrinkName</span>
+                            <span class="price">@drink.GetFormattedPrice</span>
+                        </div>
+
+                    </li>
+                }
+            }
+        </ul>
+    }
+</div>
+
+@if (OrderState.ShowMobileOrderBreakdown)
+{
+    <div class="sidebar d-flex" style="width:1000px;overflow:scroll;">
+        @if (Order.Pizzas.Any() || Order.Drinks.Any())
+        {
+            <div class="order-contents">
+                <h2>Your order</h2>
+
+                @foreach (var configuredPizza in Order.Pizzas)
+                {
+                    <ConfiguredPizzaItem Pizza="configuredPizza" OnRemoved="@(() => RemovePizza(configuredPizza))" />
+                }
+                @foreach (var drink in Order.Drinks)
+                {
+                    <DrinkItem Drink="drink" OnRemoved="@(() => RemoveDrink(drink))" />
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-cart">Choose a pizza<br>to get started</div>
+        }
+    </div>
+}
+
+
+<div class="sidebar d-none d-md-flex">
+    @if (Order.Pizzas.Any() || Order.Drinks.Any())
+    {
+        <div class="order-contents">
+            <h2>Your order</h2>
+
+            @foreach (var configuredPizza in Order.Pizzas)
+            {
+                <ConfiguredPizzaItem Pizza="configuredPizza" OnRemoved="@(() => RemovePizza(configuredPizza))" />
+            }
+            @foreach (var drink in Order.Drinks)
+            {
+                <DrinkItem Drink="drink" OnRemoved="@(() => RemoveDrink(drink))" />
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-cart">Choose a pizza<br>to get started</div>
+    }
+
+    <div class="order-total @(Order.Pizzas.Any() || Order.Drinks.Any() ? "" : "hidden") d-none d-md-flex">
+        Total:
+        <span class="total-price">@Order.GetFormattedTotalPrice()</span>
+        @if (ReachedMinimumOrder())
+        {
+            <a href="checkout" class="@(Order.Pizzas.Count == 0 ? "btn btn-warning disabled" : "btn")" style="background-color:white; color:#004969">
+                @(Order.OrderId == 0 ? "Order >" : "Modify order >")
+            </a>
+        }
+    </div>
+</div>
+@if (settingsService.GetSetting<bool>("CloseShop", true).Result)
+{
+    <TemplatedDialog Show="true">
+        <div class="dialog-title">
+            <h2>Temporary Notice </h2>
+        </div>
+        <form class="dialog-body">
+            <p style="margin-left:5px;">
+                Due to tier 3 lockdown we are closed until 6th January for takeaway and until further notice for visiting the pub.
+
+                We would like to thank all our customers for their continued support through this year and wish everyone a Merry Christmas and a Happy New year.
+            </p>
+            <p class="text-right font-weight-bold"><i>Ben and the team</i></p>
+        </form>
+    </TemplatedDialog>
+}
+
+<TemplatedDialog Show="OrderState.ShowingConfigureDialog">
+    <ConfigurePizzaDialog Pizza="OrderState.ConfiguringPizza"
+                          OnCancel="OrderState.CancelConfigurePizzaDialog"
+                          OnConfirm="OrderState.ConfirmConfigurePizzaDialog" />
+</TemplatedDialog>
+
+
+
+<TemplatedDialog Show="OrderState.ShowingDrinkDialog">
+    <DrinkConfigureDialog Drink="OrderState.ConfiguringDrink" OnCancel="OrderState.CancelConfigureDrinkDialog" OnConfirm="OrderState.ConfirmConfigureDrinkDialog"></DrinkConfigureDialog>
+</TemplatedDialog>
+
+@code {
+    List<PizzaSpecial> specials;
+    List<Drink> Drinks;
+    Order Order => OrderState.Order;
+    List<string> Categories = new List<string>();
+    bool showCategoryPage = false;
+    string activeCategory = "";
+    List<SpecialEventCategory> EventCategories { get; set; }
+
+    public void setActiveCategory(string cat)
+    {
+        activeCategory = cat;
+        showCategoryPage = true;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        EventCategories = context.SpecialEventCategories.ToList();
+        Console.WriteLine(Order.Pizzas.Count());
+        RestorePizza(OrderState);
+        specials = await orderService.GetSpecials();
+        specials = specials.OrderBy(a => a.IsSide).ToList();
+        Categories = specials.Where(a => !string.IsNullOrEmpty(a.Category)).SelectMany(a => a.Category.Split(",")).Distinct().Where(a => !string.IsNullOrEmpty(a)).ToList();
+        Categories.Add("Drinks");
+        Drinks = await orderService.GetDrinks();
+    }
+
+    async Task RemovePizza(Pizza configuredPizza)
+    {
+        if (await JS.Confirm($"Remove {configuredPizza.Special.Name} pizza from the order?"))
+        {
+            OrderState.RemoveConfiguredPizza(configuredPizza);
+        }
+    }
+
+    bool ReachedMinimumOrder()
+    {
+        if (Order == null)
+            return false;
+        if (Order.GetTotalPrice() > 12.5m)
+            return true;
+        return false;
+    }
+
+    async Task RemoveDrink(DrinkOrderItem drink)
+    {
+        if (await JS.Confirm($"Remove {drink.Drink.DrinkName} from the order?"))
+        {
+            OrderState.RemoveConfiguredDrink(drink);
+        }
+    }
+
+    void TriggerCart()
+    {
+        if (OrderState.ShowMobileOrderBreakdown)
+            OrderState.ShowMobileOrderBreakdown = false;
+        else
+            OrderState.ShowMobileOrderBreakdown = true;
+    }
+
+    private void RestorePizza(Data.OrderState pizzaState)
+    {
+        Console.WriteLine("Hit pizza restore");
+        if (pizzaState.Order != null)
+        {
+            OrderState.ReplaceOrder(pizzaState.Order);
+        }
+    }
+}

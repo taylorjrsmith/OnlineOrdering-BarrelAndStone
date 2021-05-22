@@ -1,0 +1,33 @@
+﻿@inherits LayoutComponentBase
+
+<div class="top-bar">
+    <a class="logo" href="/">
+        <img src="/img/logo.jpg" />
+    </a>
+    <a class="logo" href="/">
+        <img src="/img/icon-bs.png" />
+    </a>
+
+    <div class="d-none d-md-flex">
+        <NavLink href="" class="nav-tab" Match="NavLinkMatch.All">
+            <img src="img/pizza-slice.svg" />
+
+            <div>Get Pizza</div>
+        </NavLink>
+    </div>
+    <div class="d-none d-md-none">
+        <NavLink href="/login" class="nav-tab">
+            <i class="fas fa-user" style="color:black;">
+            </i>
+        </NavLink>
+        <NavLink href="" class="nav-tab">
+            <i class="fas fa-pizza-slice" style="color:black;"></i>
+        </NavLink>
+
+    </div>
+
+</div>
+
+<div class="content">
+    @Body
+</div>

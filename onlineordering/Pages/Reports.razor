@@ -1,0 +1,83 @@
+﻿@page "/report"
+@inject BlazorApp1.Data.OrderService orderService
+@inject BlazorApp1.Data.ManagementService managementService
+@if (IsAuthorised)
+{
+<div class="main">
+    <div class="card">
+        <div class="card-header">
+            <h1>Reports (Last 7 days)</h1>
+        </div>
+
+
+        <div class="card-body">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Income</h2>
+                            </div>
+                            <div class="card-body">
+                                <h3 style="font-size:50px; color:#004969;">£@SevenDaysIncome</h3>
+                                Seven Days
+                            </div>
+                            <div class="card-body">
+                                <h3 style="font-size:50px; color:#004969;">£@ThirtyDaysIncome</h3>
+                                Thirty Days
+                            </div>
+                            <div class="card-body">
+                                <h3 style="font-size:50px; color:#004969;">£@AllTime</h3>
+                                All Time
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Most Visited Customer</h2>
+                            </div>
+                            <div class="card-body">
+                                <table class="table">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Number</th>
+                                    </tr>
+                                    @foreach (var mvc in MVC)
+                                    {
+                                        <tr>
+                                            <td>@mvc.Key</td>
+                                            <td>@mvc.Value</td>
+                                        </tr>
+                                    }
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+}
+@if(!IsAuthorised)
+{
+    <Authorise OnAuthorisedCallback="() => IsAuthorised = true"></Authorise>
+}
+
+@code {
+    bool IsAuthorised { get; set; }
+    decimal SevenDaysIncome { get; set; }
+    decimal ThirtyDaysIncome { get;set; }
+    decimal AllTime { get; set; }
+    Dictionary<string,string> MVC { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        SevenDaysIncome = await orderService.GetLast7DaysIncome();
+        ThirtyDaysIncome = await orderService.GetLastXDaysIncome(-30);
+        AllTime = await orderService.GetLastXDaysIncome(-9999);
+        MVC = await managementService.MostValuedCustomer();
+    }
+
+}

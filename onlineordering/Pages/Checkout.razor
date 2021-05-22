@@ -1,0 +1,286 @@
+﻿@page "/checkout"
+@inject Data.OrderState OrderState
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject Data.OrderService orderService
+@inject Data.PizzaStoreContext context
+@inject Services.SpecialEventCategoryService SpecialEventCategoryService  
+
+<div class="main">
+    <EditForm Model="OrderState.Order" OnValidSubmit="PlaceOrder">
+        <div class="container">
+            <div class="row">
+                <div class="col col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Review Reservation</h2>
+                        </div>
+                        <div class="card-body">
+                            <OrderReview Order="OrderState.Order" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col mt-2 md-mt-0 col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Reservation Detail</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-field">
+                                <label>Name:</label>
+                                <div>
+                                    <InputText @bind-Value="OrderState.Order.Name" />
+                                    <ValidationMessage For="@(() => OrderState.Order.Name)" />
+                                </div>
+                            </div>
+                            <div class="form-field">
+                                <label>Phone Number:</label>
+                                <div>
+                                    <InputText @bind-Value="OrderState.Order.Number" />
+                                    <ValidationMessage For="@(() => OrderState.Order.Number)" />
+                                </div>
+                            </div>
+                            <div class="form-field">
+                                <label>Leave a note:</label>
+                                <div>
+                                    <InputTextArea @bind-Value="OrderState.Order.Comment" />
+                                    <ValidationMessage For="@(() => OrderState.Order.Comment)" />
+                                </div>
+                            </div>
+                            @if (OrderState.Order.OrderId != 0)
+                            {
+                                <div class="form-field">
+                                    Current Collection Date: @OrderState.Order.CollectionDate.ToString("HH:mm dd MMMM");
+                                </div>
+                            }
+                            <div class="form-field">
+                                <label>Date:</label>
+                                <div>
+                                    @if (Dates == null)
+                                    {
+                                        <select class="custom-select" disabled>
+                                            <option>(loading...)</option>
+                                        </select>
+                                    }
+                                    else
+                                    {
+                                        <select class="custom-select" @onchange="DateSelected">
+                                            <option value="-1" disabled selected>(select)</option>
+                                            @foreach (var date in Dates)
+                                            {
+                                                <option value="@date.Date">@($"{date.DayOfWeek} {date.ToString("dd MMMM")}")</option>
+                                            }
+
+                                        </select>
+                                    }
+                                </div>
+                            </div>
+                            @if (DateSet)
+                            {
+                                <div class="form-field">
+                                    <label>Timeslot:</label>
+                                    <div>
+                                        @if (Timeslots == null)
+                                        {
+                                            <select class="custom-select" disabled>
+                                                <option>(loading...)</option>
+                                            </select>
+                                        }
+                                        else
+                                        {
+                                            <select class="custom-select" @onchange="TimeslotSelected">
+                                                <option value="-1" disabled selected>(select)</option>
+                                                @foreach (var timeSlot in Timeslots)
+                                                {
+                                                    <option value="@timeSlot.Date">@timeSlot.Time</option>
+                                                }
+
+                                            </select>
+                                        }
+                                    </div>
+                                </div>
+                                @if (potentiallyEligibleForFreeDelivery && !ConfirmedEligibleForFreeDelivery)
+                                {
+                                <div class="form-field">
+                                    
+                                    <p class="alert alert-info">This order is potentially eligible for free delivery depending on your location, enter your postcode below  to check:</p>
+                                </div>
+
+                                <div class="form-field">
+                                    <label>Postcode:</label>
+                                    <input class="form-control" @bind="Postcode" style="margin-right:5px;" />
+                                    <button class="btn btn-primary" type="button" @onclick="() => CheckDeliveryEligibility()">Check</button>
+                                </div>
+                                    }
+                                }
+                            @if (ConfirmedEligibleForFreeDelivery)
+                            {
+                                <p class="alert alert-success">Great news, your order is eligible for free delivery. if you wish to claim this please leave your address below if not we will assume you are coming to collect</p>
+                                <div class="form-field">
+                                    <label>1st line address:</label>
+                                    <input class="form-control" @bind="FirstAddressLine"/>
+                                </div>
+                                <div class="form-field">
+                                    <label>Postcode:</label>
+                                    <input class="form-control" @bind="Postcode" disabled />
+                                </div>
+                            }
+                            @if(ConfirmedNotEligibleForFreeDelivery != null && ConfirmedNotEligibleForFreeDelivery.Value == true)
+                            {
+                                <p class="alert-danger">Sorry, but your out of our reach. Don't worry though you can still collect</p>
+                            }
+
+                            <ValidationMessage For="() => OrderState.Order.CollectionDate" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @*<div class="checkout-cols">
+                <div class="checkout-delivery-address">
+                    <h4>Deliver to...</h4>
+                    <AddressEditor Address="OrderState.Order.DeliveryAddress" />
+                </div>
+            </div>*@
+        <DataAnnotationsValidator />
+        <button type="submit" class="checkout-button btn btn-warning" disabled="@isSubmitting">
+            @(OrderState.Order.OrderId == 0 ? "Order >" : "Modify order >")
+        </button>
+
+
+    </EditForm>
+</div>
+
+@code {
+    bool isSubmitting;
+    List<Timeslot> Timeslots { get; set; }
+    List<DateTime> Dates { get; set; }
+    bool DateSet => Timeslots != null;
+    SpecialEventCategory EventCategory { get; set; }
+    private List<SpecialEventCategory> SpecialEvents { get; set; }
+    bool potentiallyEligibleForFreeDelivery { get; set; }
+    bool ConfirmedEligibleForFreeDelivery { get; set; }
+    bool? ConfirmedNotEligibleForFreeDelivery { get; set; }
+    List<PizzaSpecial> Items { get; set; }
+    string Postcode { get; set; }
+    string FirstAddressLine { get; set; }
+    public bool? IsEventExclusiveOrder { get; set; }
+
+    public List<SpecialEventCategory> AllEvents { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        IEnumerable<PizzaSpecial> items = this.OrderState.Order.Pizzas.Select<Pizza, PizzaSpecial>((Func<Pizza, PizzaSpecial>)(a => a.Special));
+        this.Items = items.ToList<PizzaSpecial>();
+        List<SpecialEventCategory> list = this.context.SpecialEventCategories.ToList<SpecialEventCategory>();
+        this.AllEvents = list;
+        this.SpecialEvents = list.Where<SpecialEventCategory>((Func<SpecialEventCategory, bool>)(i => items.Any<PizzaSpecial>((Func<PizzaSpecial, bool>)(b => ((IEnumerable<string>)b.Category.Split(",")).Any<string>((Func<string, bool>)(c => c == i.CategoryName)))) && i.PreorderByDate > DateTime.Now)).ToList<SpecialEventCategory>();
+        List<SpecialEventCategory> specialEvents = this.SpecialEvents;
+        // ISSUE: explicit non-virtual call
+        if ((specialEvents != null ? (specialEvents.Count >= 1 ? 1 : 0) : 0) != 0)
+        {
+            this.Dates = new List<DateTime>();
+            foreach (SpecialEventCategory specialEvent in this.SpecialEvents)
+            {
+                bool flag = true;
+                foreach (PizzaSpecial pizzaSpecial in items)
+                {
+                    if (!this.isEventExclusiveOrder())
+                        flag = false;
+                }
+                if (flag)
+                    this.Dates.Add(specialEvent.EventDate);
+            }
+            if (this.isEventExclusiveOrder())
+                return;
+            List<DateTime> dateTimeList = this.Dates;
+            dateTimeList.AddRange((IEnumerable<DateTime>)await this.GetDates());
+            dateTimeList = (List<DateTime>)null;
+        }
+        else
+            this.Dates = await this.orderService.GetDates();
+    }
+
+    async Task GetEventTimeslots()
+    {
+        Timeslots = await orderService.GetEventTimeslots(EventCategory);
+    }
+
+    async Task GetTimeslots(DateTime date)
+    {
+        Timeslots = await orderService.GetAvailableTimeslots(date.Day, date.Month, date.Year, OrderState.Order.Pizzas.Where(p => !p.IsSide).Count(), OrderState.Order.Pizzas.Where(p => p.IsRestricted).Count());
+    }
+
+    async Task<List<DateTime>> GetDates()
+    {
+        return await orderService.GetDates();
+    }
+
+    void TimeslotSelected(ChangeEventArgs e)
+    {
+        Console.WriteLine(e.Value);
+        OrderState.Order.CollectionDate = Convert.ToDateTime(e.Value);
+        if(EventCategory != null)
+            potentiallyEligibleForFreeDelivery = SpecialEventCategoryService.IsPotentiallyElegibleForFreeDelivery(EventCategory, OrderState.Order.GetTotalPrice());
+
+    }
+
+    async Task DateSelected(ChangeEventArgs e)
+    {
+        Console.WriteLine(e.Value.ToString());
+        if (EventCategory == null)
+        {
+            await GetTimeslots(Convert.ToDateTime(e.Value));
+        }
+        else
+        {
+            await GetEventTimeslots();
+        }
+    }
+
+    void CheckDeliveryEligibility()
+    {
+        var iseligible = SpecialEventCategoryService.CheckFreeDeliveryEligibility(Postcode, EventCategory);
+        if (iseligible)
+            ConfirmedEligibleForFreeDelivery = true;
+        if (!iseligible)
+            ConfirmedNotEligibleForFreeDelivery = true;
+
+    }
+
+
+    async Task PlaceOrder()
+    {
+        isSubmitting = true;
+        if(ConfirmedEligibleForFreeDelivery && !string.IsNullOrEmpty(FirstAddressLine))
+        {
+            OrderState.IsDelivery = true;
+            OrderState.Order.Comment += $"DELIVERY ADDRESS: {FirstAddressLine + ", " + Postcode}";
+        }
+        var newOrder = await orderService.PlaceOrder(OrderState.Order, OrderState.IsDelivery);
+        OrderState.ResetOrder();
+        NavigationManager.NavigateTo($"myorders/{newOrder.OrderId}/{newOrder.Password}");
+    }
+
+    public bool isEventExclusiveOrder()
+    {
+        if (this.IsEventExclusiveOrder.HasValue)
+            return this.IsEventExclusiveOrder.Value;
+        foreach (PizzaSpecial pizzaSpecial in this.OrderState.Order.Pizzas.Select<Pizza, PizzaSpecial>((Func<Pizza, PizzaSpecial>)(a => a.Special)))
+        {
+            string[] strArray = pizzaSpecial.Category.Split(",");
+            foreach (string str in strArray)
+            {
+                string cat = str;
+                if (this.AllEvents.Any<SpecialEventCategory>((Func<SpecialEventCategory, bool>)(a => a.CategoryName == cat)) && ((IEnumerable<string>)strArray).Where<string>((Func<string, bool>)(a => this.AllEvents.Any<SpecialEventCategory>((Func<SpecialEventCategory, bool>)(b => b.CategoryName == a)))).Count<string>() == ((IEnumerable<string>)strArray).Count<string>())
+                {
+                    this.IsEventExclusiveOrder = new bool?(true);
+                    return this.IsEventExclusiveOrder.Value;
+                }
+            }
+        }
+        this.IsEventExclusiveOrder = new bool?(false);
+        return this.IsEventExclusiveOrder.Value;
+    }
+}

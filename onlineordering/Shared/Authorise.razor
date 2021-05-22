@@ -1,0 +1,37 @@
+﻿@inject IJSRuntime Js
+@code {
+    bool IsAuthorised { get; set; }
+    string password { get; set; }
+    [Parameter]
+    public EventCallback OnAuthorisedCallback { get; set; }
+    [Parameter]
+    public object Caller { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        while (!IsAuthorised)
+        {
+            if (await Js.GetLocalStorageValue("kitchenPassword") == "BetterThanDominos")
+            {
+                password = "BetterThanDominos";
+                IsAuthorised = true;
+            }
+            if (!IsAuthorised)
+                password = await Js.Prompt("Please type the kitchen password");
+            if (password == "BetterThanDominos")
+            {
+                IsAuthorised = true;
+            }
+
+        }
+
+        if (IsAuthorised)
+            if (password == "BetterThanDominos")
+            {
+                await OnAuthorisedCallback.InvokeAsync(Caller);
+                IsAuthorised = true;
+                Js.SetLocalStorageValue("kitchenPassword", "BetterThanDominos");
+                StateHasChanged();
+            }
+    }
+}

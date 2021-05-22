@@ -1,0 +1,91 @@
+﻿@page "/sales/reports"
+@inject IJSRuntime js
+@inject BlazorApp1.Data.OrderService orderService 
+@using BlazorDateRangePicker
+<div class="container">
+    <div class="row">
+        <div class="card" style="width:100%;">
+            <div class="card-body">
+                <div class="row">
+                    <h3>Sales Reports</h3>
+                    <div class="col-md-5">
+                        <h5 class="card-title">Start Date</h5>
+                        <div class="input-group">
+                            <div class="input-group-prepend datepicker-trigger">
+                                <div class="input-group-text">
+                                    <i class="fa fa-calendar-alt"></i>
+                                </div>
+                            </div>
+                            <input type="text" class="form-control js-startdate" data-provide="datepicker" data-date-format="mm-dd-yyyy">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <h5 class="card-title">End Date</h5>
+                        <div class="input-group">
+                            <div class="input-group-prepend datepicker-trigger">
+                                <div class="input-group-text">
+                                    <i class="fa fa-calendar-alt"></i>
+                                </div>
+                            </div>
+                            <input type="text" class="form-control js-enddate" data-provide="datepicker" data-date-format="mm-dd-yyyy">
+
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button @onclick="async () => await Update()" class="btn-success btn js-go" style="margin-top:30px">Go!</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card no-shadow bg-transparent no-border rm-borders mb-3" style="width:100%;">
+            <div class="card" style="width:100%;">
+                <div class="no-gutters row">
+                    @foreach (var group in SalesData)
+                    {
+                        <div class="col-md-12 col-lg-4">
+                            <ul class="list-group list-group-flush">
+                                <li class="bg-transparent list-group-item">
+                                    <div class="widget-content p-0">
+                                        <div class="widget-content-outer">
+                                            <div class="widget-content-wrapper">
+                                                <div class="widget-content-left">
+                                                    <div class="widget-heading">Report Group</div>
+                                                    <div class="widget-subheading">@group.Key</div>
+                                                </div>
+                                                <div class="widget-content-right">
+                                                    <div class="widget-numbers text-success">@group.Value.ToString("C").Replace("$", "£")</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public DateTime StartDate { get; set; } = DateTime.Now;
+    public DateTime EndDate { get; set; } = DateTime.Now;
+    public Dictionary<string, decimal> SalesData { get; set; } = new Dictionary<string, decimal>();
+
+    public async Task GetDates()
+    {
+        var startDate = await js.InvokeAsync<string>("getUnbindableValue", ".js-startdate");
+        StartDate = Convert.ToDateTime(startDate);
+        var endDate = await js.InvokeAsync<string>("getUnbindableValue", ".js-enddate");
+        EndDate = Convert.ToDateTime(endDate);
+    }
+
+    public async Task Update()
+    {
+        await GetDates();
+        SalesData = orderService.GetSalesGroups(StartDate, EndDate);
+    }
+}

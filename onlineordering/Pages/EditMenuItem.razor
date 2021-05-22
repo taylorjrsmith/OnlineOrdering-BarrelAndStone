@@ -1,0 +1,162 @@
+﻿@page "/menu/{menuItem:int}"
+@inject BlazorApp1.Data.ManagementService ManagementService
+@inject NavigationManager NavManager
+@inject Microsoft.Extensions.Hosting.IHostingEnvironment env
+@if (Special != null)
+{
+<div class="container" style="overflow:scroll;">
+    <div class="card mt-3">
+        <div class="card-header">
+            <h1>@Special.Name</h1>
+        </div>
+        <div class="card-body">
+            <div class="form-group row">
+                <label class="col-2">Name:</label>
+                <div class="col-8">
+                    <input class="form-control" @bind-value="Special.Name" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-2">Description:</label>
+                <div class="col-8">
+                    <textarea class="form-control" @bind-value="Special.Description" @bind-value:event="oninput" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-2">Category:</label>
+                <div class="col-8">
+                    <input class="form-control" @bind="Special.Category" />
+                </div>
+            </div>
+
+            <div class="form-group row">
+                <label class="col-2">Base Price:</label>
+                <div class="col-4">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">£</span>
+                        </div>
+                        <input type="number" step="0.01" class="form-control" @bind-value="Special.EightInchPrice" placeholder="9.99">
+                    </div>
+                </div>
+                @if (!Special.IsSide)
+                {
+                    <label class="col-2">12" Price:</label>
+                    <div class="col-4">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">£</span>
+                            </div>
+                            <input type="number" step="0.01" class="form-control" @bind-value="Special.TwelveInchPrice" placeholder="9.99">
+                        </div>
+                    </div>
+
+                }
+            </div>
+            <div class="form-group row">
+                <label class="col-2">Is a Side?</label>
+                <label class="switch">
+
+                    <input type="checkbox" @bind="Special.IsSide" data-toggle="toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="form-group row">
+                <label class="col-2">Restricted Item</label>
+                <label class="switch">
+
+                    <input type="checkbox" @bind="Special.RestrictedItem" data-toggle="toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            @if (!Special.IsSide)
+            {
+                <div class="form-group row">
+                    <label class="col-2">Can be Vegan?</label>
+                    <label class="switch">
+
+                        <input type="checkbox" @bind="Special.CanBeVegan" data-toggle="toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+            }
+            <div class="row">
+                <div class="col-6">
+                    <InputFile OnChange="HandleFileSelected" />
+                </div>
+                <div class="col-6">
+                    <TakeYourWay.Shared.PizzaCard Url="@Url" Special="@Special"></TakeYourWay.Shared.PizzaCard>
+                </div>
+            </div>
+            @if (file != null)
+            {
+                <p>Name: @file.Name</p>
+                <p>Size in bytes: @file.Size</p>
+                <p>Last modified date: @file.LastModified.ToShortDateString()</p>
+                <p>Content type (not always supplied by the browser): @file.Type</p>
+            }
+
+        </div>
+        <div class="card-footer">
+            <button class="btn btn-primary" @onclick="() => UpdateModel()">Save</button>
+        </div>
+    </div>
+</div>
+}
+@if (!IsAuthorised)
+{
+    <Authorise OnAuthorisedCallback="async () => await Populate()"></Authorise>
+}
+
+@code {
+    [Parameter]
+    public int menuItem { get; set; }
+    PizzaSpecial Special { get; set; }
+    IFileListEntry file;
+    string Url { get; set; }
+    public bool IsAuthorised { get; set; }
+
+
+
+    protected async Task Populate()
+    {
+
+        IsAuthorised = true;
+        if (menuItem == 0)
+        {
+            Special = new PizzaSpecial();
+        }
+        else
+        {
+            Special = await ManagementService.GetPizzaSpecial(menuItem);
+        }
+        Url = Special.ImageUrl;
+    }
+
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+        file = files.FirstOrDefault();
+        if (file != null)
+        {
+            // Load as an image file in memory
+            var format = "image/jpeg";
+            var imageFile = await file.ToImageFileAsync(format, 640, 480);
+            var url = $"/img/barrel-and-stone/{file.Name}";
+            using (var fileStream = System.IO.File.Create($"{env.ContentRootPath}\\wwwroot{url.Replace("/", "\\")}"))
+            {
+                await imageFile.Data.CopyToAsync(fileStream);
+            }
+            Url = Special.ImageUrl = url;
+            await UpdateModel(false);
+            this.StateHasChanged();
+        }
+    }
+
+    async Task UpdateModel(bool shouldRedirect = true)
+    {
+        await ManagementService.UpdateSpecial(Special);
+        if (shouldRedirect)
+            NavManager.NavigateTo("/kitchen/manage");
+    }
+}

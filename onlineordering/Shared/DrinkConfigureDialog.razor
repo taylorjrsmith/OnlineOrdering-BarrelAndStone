@@ -1,0 +1,20 @@
+﻿<div class="dialog-title">
+    <h2>@Drink.Drink.DrinkName</h2>
+</div>
+<form class="dialog-body">
+    <p>Would you like to add @Drink.Drink.DrinkName to your basket?</p>
+</form>
+
+<div class="dialog-buttons">
+    <button class="btn btn-secondary mr-auto" @onclick="OnCancel">No</button>
+    <span class="mr-center">
+        Price: <span class="price">@(Drink.GetFormattedPrice)</span>
+    </span>
+    <button class="btn btn-success ml-auto" @onclick="OnConfirm">Yes</button>
+</div>
+
+@code {
+    [Parameter] public DrinkOrderItem Drink { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+}

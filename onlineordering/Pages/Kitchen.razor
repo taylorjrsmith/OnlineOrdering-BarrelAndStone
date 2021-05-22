@@ -1,0 +1,426 @@
+﻿@namespace BlazingPizza.Pages
+@page "/kitchen"
+@inject IJSRuntime js
+@using Newtonsoft.Json
+@using System.Threading
+@implements IDisposable
+@inject BlazorApp1.Data.OrderService  orderService
+@inject BlazorApp1.Data.OrderState OrderState
+@inject NavigationManager NavigationManager
+@inject TKGroup.Settings.ISettingService settingsService;
+
+
+<div class="main">
+    @if (showMoneySong)
+    {
+        <div class="money-container">
+            <div class="loader">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    }
+
+    <h1 style="color:#004969; font-size:40px;">£@TodaysIncome - @(kitchenInfo?.TotalPizzas ?? 0) Pizzas</h1><button class="btn btn-primary" @onclick="() => AcknowledgeAllOrders()">Acknowledge all orders</button>
+    @if (kitchenInfo != null && showBreakdown)
+    {
+        <h2 style="color:#004969">Gluten Free: @kitchenInfo.GlutenFree, 8": @kitchenInfo.EightInch, 12": @kitchenInfo.TwelveInch</h2>
+        <div class="col-6">
+            <table class="table">
+                <tr>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                </tr>
+                @foreach (var p in kitchenInfo.TodaysSales)
+                {
+                    <tr>
+                        <td>@p.Key</td>
+                        <td>@p.Value</td>
+                    </tr>
+                }
+
+            </table>
+        </div>
+        <div class="col-6">
+            <table class="table">
+                <tr>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                </tr>
+                @foreach (var p in kitchenInfo.Drinks)
+                {
+                    <tr>
+                        <td>@p.Key</td>
+                        <td>@p.Value</td>
+                    </tr>
+                }
+
+            </table>
+        </div>
+    }
+    <label class="switch">
+
+        <input type="checkbox" @bind-value="showCompletedOrders" data-toggle="toggle">
+        <span class="slider"></span>
+    </label>
+    <label>Show Completed Orders</label>
+
+    <label class="switch">
+        <input type="checkbox" @bind-value="showBreakdown" data-toggle="toggle">
+        <span class="slider"></span>
+    </label><label>Show Sides breakdown</label>
+
+    @if (Dates != null)
+    {
+        <select @onchange="DateChanged" class="custom-select">
+            @foreach (var date in Dates)
+            {
+                <option value="@date.Date">@date.DayOfWeek.ToString() @date.ToString("dd MMMM")</option>
+            }
+        </select>
+    }
+
+    @if (Orders != null)
+    {
+        <div class="container-fluid">
+            <div class="row">
+                @foreach (var order in Orders.OrderBy(a => a.Order.CollectionDate))
+                {
+
+                    <div class="col-3">
+                        <div class="card mt-2">
+                            <div class="card-header">
+                                @{
+                                    var diff = order.Order.CollectionDate.Subtract(DateTime.Now);
+                                    var res = String.Format("{0}:{1}:{2}", diff.Hours, diff.Minutes, diff.Seconds);
+                                    var multipleOrders = Orders.Any(a => a.Order.CollectionDate == order.Order.CollectionDate && a.Order.OrderId != order.Order.OrderId);
+                                }
+                                @if (multipleOrders)
+                                {
+                                    <h4>2 orders at the same time</h4>
+                                }
+                                <h1>
+                                    @order.Order.CollectionDate.ToString("HH:mm") - @order.Order.Name - @order.Order.Number
+                                    <span style="
+    /* float: right; */
+    display:inline-block;
+    float:right;
+    right: 10px;
+    top: 10px;
+    background: white;
+    padding: 5px;
+    border-radius: 5px;
+    color: #004969 ;
+">  @res</span>
+</h1>
+</div>
+<div class="card-body">
+    <div class="float-right">
+        @if (!string.IsNullOrEmpty(order.Order.Comment))
+        {
+            <div class="card" style="width:400px;float:right;">
+                <div class="card-header" style="
+    background: red;
+    color: white;
+">
+                    <h3> NOTE!</h3>
+                </div>
+
+                <div class="card-body" style="
+    font-size: 20px;
+">
+                    @order.Order.Comment
+                </div>
+            </div>
+        }
+
+        <div class="row mb-2">
+            <div class="col">
+                <div class="slice-contents" style="
+    float: right;
+">
+                    @order.Order.Pizzas.Where(a => a.Size == 8 && !a.IsSide).Count() x
+                    <span class="fas fa-pizza-slice" style="
+    margin-right: 10px;
+"> </span>
+                    @order.Order.Pizzas.Where(a => a.Size == 12 && !a.IsSide).Count() x
+                    <span class="fas fa-2x fa-pizza-slice"> </span>
+
+                </div>
+            </div>
+        </div>
+
+
+
+    </div>
+    <OrderReview Order="@order.Order" />
+</div>
+<div class="card-footer">
+    <button @onclick="() => MarkOrderAsDone(order.Order)" class="btn btn-primary">Mark as done</button>
+    <button class="btn btn-danger float-right" @onclick="() => CancelOrder(order.Order)">Cancel</button>
+    <button class="btn float-right" @onclick="() => ModifyOrder(order.Order)">Modify Order</button>
+</div>
+</div>
+</div>
+
+}
+            </div>
+        </div>
+
+    }
+</div>
+<div class="sidebar" style="overflow:scroll;">
+    @if (NewUnacknowledgedOrders != null)
+    {
+        @foreach (var order in NewUnacknowledgedOrders)
+        {
+            <div class="cart-item">
+                <a class="delete-item" @onclick="() => AcknowledgeOrder(order.Order.OrderId)">x</a>
+                <div class="title">@order.Order.CollectionDate.ToString("HH:mm") - @order.Order.Name</div>
+                <OrderReview Order="@order.Order"></OrderReview>
+                <label>Note To Kitchen: @order.Order.Comment</label>
+            </div>
+        }
+    }
+</div>
+
+@if (!IsAuthorised)
+{
+    <Authorise OnAuthorisedCallback="async () => {
+       Orders = await orderService.GetOrders(CurrentDate.Date.Day, CurrentDate.Month, CurrentDate.Year);
+                OpeningTimes = await orderService.GetOpeningTimes();
+                pollingCancellationToken?.Cancel();
+                Dates = GetDates();
+
+                // Start a new poll loop
+                PollIncome();
+    PollForUpdates();
+    IsAuthorised = true;
+}" Caller="this"></Authorise>
+}
+
+@code {
+    bool showCompletedOrders { get; set; }
+    bool showBreakdown { get; set; }
+    bool showMoneySong { get; set; }
+    bool hasMoneySongPlayed { get; set; }
+    Decimal TodaysIncome { get; set; }
+    decimal originalIncome { get; set; }
+    List<OrderWithStatus> Orders { get; set; }
+    List<OrderWithStatus> NewUnacknowledgedOrders { get; set; }
+    KitchenInfo kitchenInfo { get; set; }
+    List<int> AcknowledgedOrders { get; set; } = new List<int>();
+    Dictionary<string, double> OpeningTimes { get; set; } = new Dictionary<string, double>();
+    double open => OpeningTimes["open"];
+    double close => OpeningTimes["close"];
+    CancellationTokenSource pollingCancellationToken;
+    CancellationTokenSource incomePollCancellationToken;
+    List<DateTime> Dates { get; set; }
+    DateTime CurrentDate { get; set; } = DateTime.Now;
+    bool IsAuthorised { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    //protected override async Task OnAfterRenderAsync(bool firstRender)
+    //{
+    //        while (!IsAuthorised)
+    //        {
+    //            var kp = await js.Prompt("Please type the kitchen password");
+    //            if (kp == "BetterThanDominos")
+    //            {
+    //                IsAuthorised = true;
+
+    //                Orders = await orderService.GetOrders(CurrentDate.Date.Day, CurrentDate.Month, CurrentDate.Year);
+    //                OpeningTimes = await orderService.GetOpeningTimes();
+    //                pollingCancellationToken?.Cancel();
+    //                Dates = GetDates();
+
+    //                // Start a new poll loop
+    //                PollIncome();
+    //                PollForUpdates();
+    //            }
+    //        }
+
+    //        await base.OnAfterRenderAsync(firstRender);
+    //}
+
+    async void AcknowledgeOrder(int orderId)
+    {
+        AcknowledgedOrders.Add(orderId);
+        NewUnacknowledgedOrders.Remove(NewUnacknowledgedOrders.FirstOrDefault(a => a.Order.OrderId == orderId));
+        StateHasChanged();
+    }
+
+    async void AcknowledgeAllOrders()
+    {
+        var unacknowledgedOrders = NewUnacknowledgedOrders.Select(a => a.Order.OrderId).ToList();
+        foreach(var i in unacknowledgedOrders) {
+            AcknowledgedOrders.Add(i);
+            NewUnacknowledgedOrders.Remove(NewUnacknowledgedOrders.FirstOrDefault(a => a.Order.OrderId == i));
+            StateHasChanged();
+        }
+    }
+
+    protected async Task ModifyOrder(Order order)
+    {
+        OrderState.ReplaceOrder(order);
+        NavigationManager.NavigateTo("/");
+    }
+
+    protected async Task CancelOrder(Order order)
+    {
+        if (await js.Confirm($"Are you sure you want to cancel {order.Name}'s order?"))
+        {
+            await orderService.CancelOrder(order.OrderId, order.Password);
+        }
+    }
+
+
+    void DateChanged(ChangeEventArgs e)
+    {
+        Console.WriteLine(e.Value);
+        CurrentDate = Convert.ToDateTime(e.Value);
+
+    }
+
+    async Task MarkOrderAsDone(Order order)
+    {
+        var completeOrder = Orders.FirstOrDefault(a => a.Order.OrderId == order.OrderId);
+        completeOrder.StatusText = "Done";
+        StateHasChanged();
+        await orderService.MarkOrderAsDone(order.OrderId);
+    }
+
+    List<DateTime> GetDates()
+    {
+        var numberOfDaysBack = settingsService.GetSetting<int>("KitchenSettings:NumberOfDaysBack", 0).Result;
+        var dates = new List<DateTime>();
+        var date = DateTime.Now.Date.AddDays(numberOfDaysBack);
+        for (int i = 0; i <= 14; i++)
+        {
+            if (date.DayOfWeek.ToString() == "Monday" || date.DayOfWeek.ToString() == "Tuesday")
+            {
+                date = date.AddDays(1);
+                continue;
+            }
+            dates.Add(date);
+            date = date.AddDays(1);
+
+        }
+        CurrentDate = dates[0];
+        return dates;
+    }
+
+
+    private async void PollIncome()
+    {
+        incomePollCancellationToken = new CancellationTokenSource();
+        while (!incomePollCancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                var ki = await orderService.GetTodaysRevenue(CurrentDate.Day, CurrentDate.Month, CurrentDate.Year);
+                TodaysIncome = ki.TotalIncome;
+
+                if (originalIncome == 0)
+                    originalIncome = TodaysIncome;
+                kitchenInfo = ki;
+
+                StateHasChanged();
+
+                if (TodaysIncome > 1000 && originalIncome < 1000 && !hasMoneySongPlayed)
+                {
+                    await js.InvokeVoidAsync("money");
+                    showMoneySong = true;
+                    hasMoneySongPlayed = true;
+                    await Task.Delay(60000);
+                    showMoneySong = false;
+                    await js.InvokeVoidAsync("stopMoney");
+                }
+
+                await Task.Delay(60000);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                incomePollCancellationToken?.Cancel();
+            }
+        }
+    }
+
+    private async void PollForUpdates()
+    {
+
+        pollingCancellationToken = new CancellationTokenSource();
+        while (!pollingCancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                Orders = await orderService.GetOrders(CurrentDate.Date.Day, CurrentDate.Date.Month, CurrentDate.Date.Year);
+                var ordersjson1 = JsonConvert.SerializeObject(Orders);
+                Console.WriteLine(ordersjson1);
+                //Orders.RemoveAll(a => a.Order.CollectionDate.Date.ToString("dd MM yy") != CurrentDate.Date.ToString("dd MM yy"));
+                if (!showCompletedOrders)
+                {
+                    Orders.RemoveAll(a => a.Order.Status == "Done");
+                }
+                var ordersjson = JsonConvert.SerializeObject(Orders);
+                Console.WriteLine(ordersjson);
+                //unacknowledged orders are orders that have been created during opening time for the same day and that have not already been marked as unacknowledged
+                NewUnacknowledgedOrders = Orders.Where(a => a.Order.CollectionDate > DateTime.Now && a.Order.CreatedTime > DateTime.Now.Date.AddHours(open) && a.Order.CreatedTime < DateTime.Now.Date.AddHours(close) && a.Order.CollectionDate < DateTime.Now.Date.AddHours(close) && !AcknowledgedOrders.Any(b => b == a.Order.OrderId)).ToList();
+                Console.WriteLine(NewUnacknowledgedOrders.Count);
+                if (NewUnacknowledgedOrders != null && NewUnacknowledgedOrders.Count > 0)
+                {
+                    await js.InvokeVoidAsync("notify");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                pollingCancellationToken.Cancel();
+                Console.WriteLine(ex);
+            }
+
+            StateHasChanged();
+
+            await Task.Delay(4000);
+        }
+
+    }
+
+    void IDisposable.Dispose()
+    {
+        pollingCancellationToken?.Cancel();
+    }
+
+
+}
+}

@@ -1,0 +1,115 @@
+﻿@page "/"
+@namespace BlazorApp1.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Gate Barrel And Stone</title>
+    <base href="~/" />
+    <link rel="icon" href="img/icon-bs.png" />
+    <link href="/all.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link href="css/site.css" rel="stylesheet" />
+    <link rel="manifest" href="~/manifest.json" />
+
+</head>
+<body>
+    <app>
+        <component type="typeof(App)" render-mode="ServerPrerendered" />
+    </app>
+
+    <div id="blazor-error-ui">
+        <environment include="Staging,Production">
+            An error has occurred. This application may no longer respond until reloaded.
+        </environment>
+        <environment include="Development">
+            An unhandled exception has occurred. See browser dev tools for details.
+        </environment>
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.server.js"></script>
+    <script src="_content/BlazorInputFile/inputfile.js"></script>
+    <script src="~/lazyimages.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"
+            integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" />
+    <script>
+        var moneyaudio;
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js').then(reg => console.log('service worker registered')).catch(err => console.log("service worker not registered"));
+        }
+        window.notify = () => {
+            var audio = new Audio("eventually.mp3");
+            audio.play();
+        }
+
+        window.money = () => {
+            moneyaudio = new Audio("money.mp3");
+            moneyaudio.play();
+        }
+
+        window.stopMoney = () => {
+            moneyaudio.pause();
+        }
+
+        window.getUnbindableValue = function (selector) {
+            return $(selector).val();
+
+        }
+
+
+        new MutationObserver((mutations, observer) => {
+            if (document.querySelector('#components-reconnect-modal h5 a')) {
+                // Now every 10 seconds, see if the server appears to be back, and if so, reload
+                async function attemptReload() {
+                    await fetch(''); // Check the server really is back
+                    location.reload();
+                }
+                observer.disconnect();
+                attemptReload();
+                setInterval(attemptReload, 10000);
+            }
+        }).observe(document.body, { childList: true, subtree: true });
+
+
+        window.PrintElement = (element) => {
+            var printWindow = window.open('', 'PRINT');
+            var contents = document.getElementById(element);
+            contents.innerHTML += '<link href="https://thegatebarrelandstone.co.uk/all.css" rel="stylesheet"/>' +
+                '<link rel = "stylesheet" href ="https://thegatebarrelandstone.co.uk/css/bootstrap/bootstrap.min.css" />' +
+                '<link href="css/site.css" rel="stylesheet" />';
+            contents.innerHTML += `<style> @@media print{
+.mt-3{margin-top:250px !important;}
+body{font-size:150px;}
+.card-footer{display:none;}
+h5 {position:relative !important; font-size:150px; background:#ccc; color:white; margin-top:200px;}
+}</style>`;
+            printWindow.document.write(contents.innerHTML);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(function () { printWindow.print(); }, 500);
+            window.onfocus = function () { setTimeout(function () { printWindow.close(); }, 500); }
+            return true;
+        }
+
+        $(document).ready(function () {
+            $(".js-go").on("click", function (e) {
+                e.preventDefault();
+                window.location.href = "/reporting/" + $(".js-startdate").val() + "/" + $(".js-enddate").val();
+            });
+        })
+
+    </script>
+
+</body>
+</html>
