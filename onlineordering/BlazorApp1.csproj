@@ -32,6 +32,9 @@
     <Reference Include="TKGroup.InHouseOrder.Data">
       <HintPath>..\..\..\..\..\..\tkorder\TKGroup.InHouseOrder.Data\bin\Debug\netstandard2.1\TKGroup.InHouseOrder.Data.dll</HintPath>
     </Reference>
+    <Reference Include="TKOnlinePlatform.Utilities">
+      <HintPath>..\..\..\..\..\..\tkorder\TKOnlinePlatform.Utilities\bin\Release\netstandard2.1\TKOnlinePlatform.Utilities.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

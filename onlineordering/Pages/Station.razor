@@ -62,24 +62,26 @@
                                 for (int i = 0; i < item.Quantity; i++)
                                 {
 
-                                    <li style="font-weight:500; margin-top:10px;">@item.Product.Name</li>
+                                    var voidStyle = "text-decoration:line-through; color:red;";
+
+                        <li style="font-weight:500; margin-top:10px;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">@item.Product.Name</li>
                                     <li style="list-style:none;">
                                         <ul>
                                             @foreach (var opt in item.orderItemOptions)
                                             {
-                                                <li style="font-weight:300;">
-                                                    @opt.ProductOption.Name
-                                                </li>
+                                            <li style="font-weight:300;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">
+                                                @opt.ProductOption.Name
+                                            </li>
                                             }
                                             @foreach (var mod in item.OrderItemModifiers)
                                             {
-                                                <li style="font-weight:300">
-                                                    @mod.Modifier.Product.Name
-                                                </li>
+                                        <li style="font-weight:300;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">
+                                            @mod.Modifier.Product.Name
+                                        </li>
                                             }
                                             @if (!string.IsNullOrEmpty(item.Note))
                                             {
-                                                <li>@item.Note</li>
+                                        <li style="@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">@item.Note</li>
                                             }
                                         </ul>
                                     </li>
