@@ -74,7 +74,6 @@
 
 <div class="main">
     <div class="container">
-        <p><strong>Have allergies? We advise before ordering food and drink, please text or call Ben on 07944572437 to hear about our ingredients.</strong></p>
         @if (!string.IsNullOrEmpty(settingsService.GetSetting<string>("Notice", "").Result))
         {
             var notice = settingsService.GetSetting<string>("Notice", "").Result;
@@ -212,14 +211,12 @@
 {
     <TemplatedDialog Show="true">
         <div class="dialog-title">
-            <h2>Temporary Notice </h2>
+            <h2>We will be right back! </h2>
         </div>
         <form class="dialog-body">
             <p style="margin-left:5px;">
-                Due to tier 3 lockdown we are closed until 6th January for takeaway and until further notice for visiting the pub.
-
-                We would like to thank all our customers for their continued support through this year and wish everyone a Merry Christmas and a Happy New year.
-            </p>
+                Over the next 3 weeks The Gate Bricket Wood we will be closed due to a refurbishment. We will be closed between 31/01/2022 - 22/02/2022, We thank you for your continued support and look forward to taking your orders again.
+                 </p>
             <p class="text-right font-weight-bold"><i>Ben and the team</i></p>
         </form>
     </TemplatedDialog>

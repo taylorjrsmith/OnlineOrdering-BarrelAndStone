@@ -39,13 +39,14 @@ namespace BlazorApp1
             services.AddSingleton<CacheHelper>();
             services.AddScoped<ManagementService>();
             services.AddTKGroupSettings();
-            services.AddScoped<ISettingDbContext,PizzaStoreContext>();
+            services.AddScoped<ISettingDbContext, PizzaStoreContext>();
             services.AddScoped<ISettingService, CacheSettingService>();
             services.AddDbContext<InHouseOrderContext>(c => { c.UseSqlServer(Configuration.GetConnectionString("inhouseordercontext")); }, ServiceLifetime.Transient);
             services.AddTransient<CollectionService>();
             services.AddTransient<ProductService>();
             services.AddTransient<OrderAPIService>();
             services.AddTransient<PizzaStoreContext>();
+            services.AddMvc(options => options.EnableEndpointRouting = false).SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0);
             services.AddTransient<SpecialEventCategoryService>();
 
             services.AddDbContext<PizzaStoreContext>(options =>
@@ -73,6 +74,7 @@ namespace BlazorApp1
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.UseMvcWithDefaultRoute();
 
             app.UseEndpoints(endpoints =>
             {

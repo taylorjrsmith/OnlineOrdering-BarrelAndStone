@@ -9,7 +9,7 @@
 @implements IDisposable
 @inject OrderAPIService apiService
 @inject InHouseOrderContext context
-@inject BlazorApp1.Data.OrderService  orderService
+@inject BlazorApp1.Data.OrderService orderService
 @inject IJSRuntime js
 @inject Microsoft.Extensions.Configuration.IConfiguration config
 @inject BlazorApp1.Data.OrderState OrderState
@@ -20,24 +20,24 @@
     <p class="badge badge-primary" style="
     font-size: 20px;
 ">Last Checked @LastCheckedDate</p>
-<div class="row" style="margin-left:0 !important; margin-right:0 !important;">
-    <div class="card-columns" style="display:flex;">
-       @if (OrdersInProgress != null)
-        {
-
-            @foreach (var o in OrdersInProgress)
+    <div class="row" style="margin-left:0 !important; margin-right:0 !important;">
+        <div class="card-columns" style="display:flex;">
+            @if (OrdersInProgress != null)
             {
 
-                var collectionIds = new List<string>();
+                @foreach (var o in OrdersInProgress)
+                {
 
-                o.OrderItems.RemoveAll(a => a.Product.StationId != stationId);
+                    var collectionIds = new List<string>();
 
-                if (o.OrderItems.Count == 0)
-                    continue;
+                    o.OrderItems.RemoveAll(a => a.Product.StationId != stationId);
 
-                <div class="card"  id="@o.OrderId">
-                    <div class="card-body">
-                        <h5 style="
+                    if (o.OrderItems.Count == 0)
+                        continue;
+
+                    <div class="card" id="@o.OrderId">
+                        <div class="card-body">
+                            <h5 style="
     position: absolute;
     background: black;
     color: white;
@@ -45,81 +45,89 @@
     right: 0;
     top: 0;
 ">
-                            Table @o.TableNumber
-                        </h5>
-                        <span style="position:absolute; left:0; top:0;">@o.CreatedDate.ToString("HH:mm")</span>
-                        <div class="mt-3"></div>
-                        <p class="text-center">@(string.IsNullOrEmpty(o.Name) ? "Staff app" : o.Name)</p>
-                        <ul style="padding-left:5px;">
-                            @foreach (var item in o.OrderItems.OrderBy(a => a.TicketingGroupName))
+                                Table @o.TableNumber
+                            </h5>
+                            <span style="position:absolute; left:0; top:0;">@o.CreatedDate.ToString("HH:mm")</span>
+                            <div class="mt-3"></div>
+                            <p class="text-center">@(string.IsNullOrEmpty(o.Name) ? "Staff app" : o.Name)</p>
+                            @if (o.TagsCommaSeperated != null && o.TagsCommaSeperated.Count() > 0)
                             {
-                                @if (!collectionIds.Any(a => a == item.TicketingGroupName))
-                                {
-                                    collectionIds.Add(item.TicketingGroupName);
-                                    <li style="list-style:none; font-weight:bold; margin-top:5px;">@item.TicketingGroupName</li>
-                                    <hr />
-                                }
-                                for (int i = 0; i < item.Quantity; i++)
-                                {
-
-                                    var voidStyle = "text-decoration:line-through; color:red;";
-
-                        <li style="font-weight:500; margin-top:10px;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">@item.Product.Name</li>
-                                    <li style="list-style:none;">
-                                        <ul>
-                                            @foreach (var opt in item.orderItemOptions)
-                                            {
-                                            <li style="font-weight:300;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">
-                                                @opt.ProductOption.Name
-                                            </li>
-                                            }
-                                            @foreach (var mod in item.OrderItemModifiers)
-                                            {
-                                        <li style="font-weight:300;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">
-                                            @mod.Modifier.Product.Name
-                                        </li>
-                                            }
-                                            @if (!string.IsNullOrEmpty(item.Note))
-                                            {
-                                        <li style="@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">@item.Note</li>
-                                            }
-                                        </ul>
-                                    </li>
-                                }
+                                <div class="row mt-2 mb-3">
+                                    @for (int i = 0; i < o.TagsCommaSeperated.Count(); i++)
+                                    {
+                                        <span style="font-size:16px;" class="badge badge-dark @(i == 0 ? "" : "ml-3")">@(o.TagsCommaSeperated[i])</span>
+                                    }
+                                </div>
                             }
-                        </ul>
-                        <i>@o.SpecialRequests</i>
+                            <ul style="padding-left:5px;">
+                                @foreach (var item in o.OrderItems.OrderBy(a => a.KitchenDisplayOrderValue).ThenBy(a => a.TicketingGroupName))
+                                {
+                                    @if (!collectionIds.Any(a => a == item.TicketingGroupName))
+                                    {
+                                        collectionIds.Add(item.TicketingGroupName);
+                                        <li style="list-style:none;font-weight:bold;margin-top:5px;width: 100%;text-align: center;left: 0;background: #EAEAEA;color: black;">@item.TicketingGroupName</li>
+                                    }
+                                    for (int i = 0; i < item.Quantity; i++)
+                                    {
 
+                                        var voidStyle = "text-decoration:line-through; color:red;";
+
+                                        <li style="font-weight:500; margin-top:10px;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">@item.Product.Name</li>
+                                        <li style="list-style:none;">
+                                            <ul>
+                                                @foreach (var opt in item.orderItemOptions)
+                                                {
+                                                    <li style="font-weight:300;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">
+                                                        @opt.ProductOption.Name
+                                                    </li>
+                                                }
+                                                @foreach (var mod in item.OrderItemModifiers)
+                                                {
+                                                    <li style="font-weight:300;@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">
+                                                        @mod.Modifier.Product.Name
+                                                    </li>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.Note))
+                                                {
+                                                    <li style="@(item.CancellationState != CancellationState.NotCancelled ? voidStyle : "")">@item.Note</li>
+                                                }
+                                            </ul>
+                                        </li>
+                                    }
+                                }
+                            </ul>
+                            <i>@o.SpecialRequests</i>
+
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-warning" @onclick="() => RemoveTicket(o.OrderId)">Clear Ticket</button>
+                            <button class="btn btn-primary" onclick="PrintElement('@o.OrderId')">Print</button>
+                        </div>
                     </div>
-                    <div class="card-footer">
-                        <button class="btn btn-warning" @onclick="() => RemoveTicket(o.OrderId)">Clear Ticket</button>
-                        <button class="btn btn-primary" onclick="PrintElement('@o.OrderId')">Print</button>
-                    </div>
-                </div>
+                }
+
+
             }
-
-
-        }
-        @if (Orders != null && stationName.ToLower().Trim() == "kitchen")
-        {
-            @foreach (var order in Orders.OrderBy(a => a.Order.CollectionDate))
+            @if (Orders != null && stationName.ToLower().Trim() == "kitchen")
             {
+                @foreach (var order in Orders.OrderBy(a => a.Order.CollectionDate))
+                {
 
 
-                <div class="card mt-2" style="max-width:400px;">
-                    <div class="card-header">
-                        @{
-                            var diff = order.Order.CollectionDate.Subtract(DateTime.Now);
-                            var res = String.Format("{0}:{1}:{2}", diff.Hours, diff.Minutes, diff.Seconds);
-                            var multipleOrders = Orders.Any(a => a.Order.CollectionDate == order.Order.CollectionDate && a.Order.OrderId != order.Order.OrderId);
-                        }
-                        @if (multipleOrders)
-                        {
-                            <h4>2 orders at the same time</h4>
-                        }
-                        <h1 style="font-size:18px;">
-                            @order.Order.CollectionDate.ToString("HH:mm") - @order.Order.Name - @order.Order.Number
-                            <span style="
+                    <div class="card mt-2" style="max-width:400px;">
+                        <div class="card-header">
+                            @{
+                                var diff = order.Order.CollectionDate.Subtract(DateTime.Now);
+                                var res = String.Format("{0}:{1}:{2}", diff.Hours, diff.Minutes, diff.Seconds);
+                                var multipleOrders = Orders.Any(a => a.Order.CollectionDate == order.Order.CollectionDate && a.Order.OrderId != order.Order.OrderId);
+                            }
+                            @if (multipleOrders)
+                            {
+                                <h4>2 orders at the same time</h4>
+                            }
+                            <h1 style="font-size:18px;">
+                                @order.Order.CollectionDate.ToString("HH:mm") - @order.Order.Name - @order.Order.Number
+                                <span style="
     /* float: right; */
     display:inline-block;
     float:right;
@@ -130,43 +138,43 @@
     border-radius: 5px;
     color: #004969 ;
 ">  @res</span>
-</h1>
-</div>
-<div class="card-body">
-    <div class="float-right">
-        <div class="row mb-2">
-            <div class="col">
-                <div class="slice-contents" style="
+                            </h1>
+                        </div>
+                        <div class="card-body">
+                            <div class="float-right">
+                                <div class="row mb-2">
+                                    <div class="col">
+                                        <div class="slice-contents" style="
     float: right;
 ">
-                    @order.Order.Pizzas.Where(a => a.Size == 8 && !a.IsSide).Count() x
-                    <span class="fas fa-pizza-slice" style="
+                                            @order.Order.Pizzas.Where(a => a.Size == 8 && !a.IsSide).Count() x
+                                            <span class="fas fa-pizza-slice" style="
     margin-right: 10px;
 "> </span>
-                    @order.Order.Pizzas.Where(a => a.Size == 12 && !a.IsSide).Count() x
-                    <span class="fas fa-2x fa-pizza-slice"> </span>
+                                            @order.Order.Pizzas.Where(a => a.Size == 12 && !a.IsSide).Count() x
+                                            <span class="fas fa-2x fa-pizza-slice"> </span>
 
-                </div>
-            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+                            </div>
+                            <OrderReview Order="@order.Order" />
+                        </div>
+                        <div class="card-footer">
+                            <button @onclick="() => MarkOrderAsDone(order.Order)" class="btn btn-primary">Mark as done</button>
+                            <button class="btn btn-danger float-right" @onclick="() => CancelOrder(order.Order)">Cancel</button>
+                            <button class="btn float-right" @onclick="() => ModifyOrder(order.Order)">Modify Order</button>
+                        </div>
+                    </div>
+
+                }
+
+            }
         </div>
-
-
-
     </div>
-    <OrderReview Order="@order.Order" />
-</div>
-<div class="card-footer">
-    <button @onclick="() => MarkOrderAsDone(order.Order)" class="btn btn-primary">Mark as done</button>
-    <button class="btn btn-danger float-right" @onclick="() => CancelOrder(order.Order)">Cancel</button>
-    <button class="btn float-right" @onclick="() => ModifyOrder(order.Order)">Modify Order</button>
-</div>
-</div>
-
-}
-
-        }
-    </div>
-</div>
 </div>
 
 @if (!IsAuthorised)
