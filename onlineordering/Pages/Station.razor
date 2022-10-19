@@ -9,6 +9,7 @@
 @implements IDisposable
 @inject OrderAPIService apiService
 @inject InHouseOrderContext context
+@inject TKGroup.InHouseOrder.Data.UtilityServices.StationClearRequestService stationClearRequestService
 @inject BlazorApp1.Data.OrderService orderService
 @inject IJSRuntime js
 @inject Microsoft.Extensions.Configuration.IConfiguration config
@@ -21,12 +22,14 @@
     <p class="badge badge-primary" style="
     font-size: 20px;
 ">Last Checked @LastCheckedDate</p>
+    <button class="btn btn-primary d-inline-block" @onclick="async () => { await Recall(stationId, RecallNumber); }">Recall Last @RecallNumber</button>
+    <input class="form-control d-inline-block" style="width:100px;" type="number" @bind="RecallNumber" />
     <div class="row" style="margin-left:0 !important; margin-right:0 !important;">
         <div class="card-columns" style="display:flex;">
             @if (OrdersInProgress != null)
             {
 
-                @foreach (var o in OrdersInProgress)
+                @foreach (var o in OrdersInProgress.Where(a => !OrdersDone.Any(b => b == a.OrderId)))
                 {
 
                     var collectionIds = new List<string>();
@@ -36,7 +39,7 @@
                     if (o.OrderItems.Count == 0)
                         continue;
 
-                    <div class="card" id="@o.OrderId">
+                    <div class="card" style="@(RecallIds.Contains(o.OrderId) ? "background:#add8e6;" : "")" id="@o.OrderId">
                         <div class="card-body">
                             <h5 style="
     position: absolute;
@@ -102,7 +105,6 @@
                         </div>
                         <div class="card-footer">
                             <button class="btn btn-warning" @onclick="() => RemoveTicket(o.OrderId)">Clear Ticket</button>
-                            <button class="btn btn-primary" onclick="PrintElement('@o.OrderId')">Print</button>
                         </div>
                     </div>
                 }
@@ -198,6 +200,9 @@
     List<OrderWithStatus> Orders { get; set; }
     DateTime CurrentDate { get; set; } = DateTime.Now;
     public int additionalDelay { get; set; }
+    public List<Guid> RecallIds { get; set; } = new List<Guid>();
+    public List<Guid> OrdersDone = new List<Guid>();
+    public int RecallNumber { get; set; } = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -210,6 +215,7 @@
         OrdersInProgress.Remove(OrdersInProgress.FirstOrDefault(a => a.OrderId == orderId));
         var stationClearRequest = new TKGroup.InHouseOrder.Common.Stations.StationClearRequest() { OrderId = orderId, RequestDate = DateTime.Now, StationId = stationId };
         context.Add(stationClearRequest);
+        OrdersDone.Add(orderId);
         additionalDelay = 2000;
         await context.SaveChangesAsync();
     }
@@ -237,10 +243,6 @@
         NavigationManager.NavigateTo("/");
     }
 
-    private async void Print(Guid orderId)
-    {
-        js.InvokeVoidAsync("PrintElement", orderId.ToString());
-    }
 
     private async Task BindToUI()
     {
@@ -260,6 +262,14 @@
         Orders = await orderService.GetOrders(CurrentDate.Date.Day, CurrentDate.Date.Month, CurrentDate.Date.Year);
         Orders = Orders.Where(a => a.Order.Status != "Done").ToList();
         StateHasChanged();
+    }
+
+    private async Task Recall(int stationId, int numberToRecall)
+    {
+        var Ids = stationClearRequestService.Recall(stationId, RecallNumber);
+        OrdersDone.RemoveAll(a => Ids.Contains(a));
+        await BindToUI();
+        RecallIds.AddRange(Ids);
     }
 
     private async void PollForUpdates()

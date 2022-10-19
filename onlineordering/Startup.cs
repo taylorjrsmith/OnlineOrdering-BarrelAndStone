@@ -14,6 +14,8 @@ using Microsoft.EntityFrameworkCore;
 using TKGroup.Settings;
 using TKGroup.InHouseOrder.Data;
 using BlazorApp1.Services;
+using TKGroup.InHouseOrder.Common.Stations;
+using TKGroup.InHouseOrder.Data.UtilityServices;
 
 namespace BlazorApp1
 {
@@ -49,7 +51,7 @@ namespace BlazorApp1
             services.AddTransient<TKGroup.InHouseOrder.Data.SettingsService>();
             services.AddMvc(options => options.EnableEndpointRouting = false).SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0);
             services.AddTransient<SpecialEventCategoryService>();
-
+            services.AddTransient<StationClearRequestService>();
             services.AddDbContext<PizzaStoreContext>(options =>
                 options.UseSqlite("Data Source=pizza.db"), ServiceLifetime.Transient);
         }
