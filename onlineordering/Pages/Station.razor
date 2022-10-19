@@ -14,6 +14,7 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration config
 @inject BlazorApp1.Data.OrderState OrderState
 @inject NavigationManager NavigationManager
+@inject TKGroup.InHouseOrder.Data.SettingsService settingsService
 
 
 <div class="container-fluid mt-3" style="overflow-y:scroll;">
@@ -243,8 +244,9 @@
 
     private async Task BindToUI()
     {
-        clearRequests = context.StationClearRequests.Where(a => a.RequestDate.Date == DateTime.Now.Date && a.StationId == stationId).ToList();
-        OrdersInProgress = await apiService.GetOrdersInProgress();
+        int bufferWindow = settingsService.GetSetting<int>("Station|BufferWindow", 4);
+        clearRequests = context.StationClearRequests.Where(a => a.RequestDate > DateTime.Now.AddHours(bufferWindow * -1) && a.StationId == stationId).ToList();
+        OrdersInProgress = await apiService.GetOrdersInProgress(bufferWindow);
         if (OrdersSeen.Count == 0)
         {
             OrdersSeen = OrdersInProgress.Select(a => a.OrderId).ToList();

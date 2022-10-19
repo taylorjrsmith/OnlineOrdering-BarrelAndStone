@@ -31,15 +31,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="TKGroup.InHouseOrder.Common">
-			<HintPath>..\..\..\..\..\..\tkorder\TKGroup.InHouseOrder.Common\bin\Debug\netstandard2.1\TKGroup.InHouseOrder.Common.dll</HintPath>
-		</Reference>
-		<Reference Include="TKGroup.InHouseOrder.Data">
-			<HintPath>..\..\..\..\..\..\tkorder\TKGroup.InHouseOrder.Data\bin\Debug\netstandard2.1\TKGroup.InHouseOrder.Data.dll</HintPath>
-		</Reference>
-		<Reference Include="TKOnlinePlatform.Utilities">
-			<HintPath>..\..\..\..\..\..\tkorder\TKOnlinePlatform.Utilities\bin\Release\netstandard2.1\TKOnlinePlatform.Utilities.dll</HintPath>
-		</Reference>
+	  <Reference Include="TKGroup.InHouseOrder.Common">
+	    <HintPath>..\..\..\..\..\..\root\tkorder\TKGroup.InHouseOrder.Data\bin\Debug\netstandard2.1\TKGroup.InHouseOrder.Common.dll</HintPath>
+	  </Reference>
+	  <Reference Include="TKGroup.InHouseOrder.Data">
+	    <HintPath>..\..\..\..\..\..\root\tkorder\TKGroup.InHouseOrder.Data\bin\Debug\netstandard2.1\TKGroup.InHouseOrder.Data.dll</HintPath>
+	  </Reference>
+	  <Reference Include="TKOnlinePlatform.Utilities">
+	    <HintPath>..\..\..\..\..\..\root\tkorder\TKGroup.InHouseOrder.Data\bin\Debug\netstandard2.1\TKOnlinePlatform.Utilities.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 </Project>

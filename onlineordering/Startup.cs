@@ -46,6 +46,7 @@ namespace BlazorApp1
             services.AddTransient<ProductService>();
             services.AddTransient<OrderAPIService>();
             services.AddTransient<PizzaStoreContext>();
+            services.AddTransient<TKGroup.InHouseOrder.Data.SettingsService>();
             services.AddMvc(options => options.EnableEndpointRouting = false).SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0);
             services.AddTransient<SpecialEventCategoryService>();
 
