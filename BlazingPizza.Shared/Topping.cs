@@ -15,6 +15,7 @@ namespace BlazingPizza
     public string Name { get; set; }
 
     public Decimal Price { get; set; }
+    public bool IsDeleted { get; set; }
 
     public string GetFormattedPrice(int size) => size != 8 ? this.Price.ToString("0.00") : (this.Price / 2M).ToString("0.00");
   }

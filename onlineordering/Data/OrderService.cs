@@ -31,7 +31,7 @@ namespace BlazorApp1.Data
 
         public async Task<List<Topping>> GetToppings()
         {
-            return await _db.Toppings.OrderBy(t => t.Name).ToListAsync();
+            return await _db.Toppings.Where(a => !a.IsDeleted).OrderBy(t => t.Name).ToListAsync();
         }
 
         public async Task MarkOrderAsDone(int id)

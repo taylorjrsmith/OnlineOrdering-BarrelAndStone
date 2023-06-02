@@ -1,19 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31205.134
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorApp1", "onlineordering\BlazorApp1.csproj", "{0C04D435-ECC0-44BF-BCFF-B66F98355EFB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazingPizza.Shared", "BlazingPizza.Shared\BlazingPizza.Shared.csproj", "{3186CAB3-990A-4B0F-9E9D-1269D6C8346E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazingPizza.Shared", "BlazingPizza.Shared\BlazingPizza.Shared.csproj", "{3186CAB3-990A-4B0F-9E9D-1269D6C8346E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazingComponents", "BlazingComponents\BlazingComponents.csproj", "{E3763B90-A3EB-4278-8570-FAFF6C5A323C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazingComponents", "BlazingComponents\BlazingComponents.csproj", "{E3763B90-A3EB-4278-8570-FAFF6C5A323C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazingPizza.ComponentsLibrary", "BlazingPizza.ComponentsLibrary\BlazingPizza.ComponentsLibrary.csproj", "{1A1FA1A5-4FA1-4E23-B0A2-53F30FC0E272}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazingPizza.ComponentsLibrary", "BlazingPizza.ComponentsLibrary\BlazingPizza.ComponentsLibrary.csproj", "{1A1FA1A5-4FA1-4E23-B0A2-53F30FC0E272}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TKGroup.Settings", "TKGroup.Settings\TKGroup.Settings.csproj", "{54163DA1-A459-4ED9-A590-34926D883963}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TKGroup.Settings", "TKGroup.Settings\TKGroup.Settings.csproj", "{54163DA1-A459-4ED9-A590-34926D883963}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorClassLibrary1", "RazorClassLibrary1\RazorClassLibrary1.csproj", "{CD314D9D-E925-4E9A-90BE-F394D05D033D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RazorClassLibrary1", "RazorClassLibrary1\RazorClassLibrary1.csproj", "{CD314D9D-E925-4E9A-90BE-F394D05D033D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
