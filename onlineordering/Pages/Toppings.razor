@@ -2,53 +2,59 @@
 @using BlazingPizza
 @page "/toppings"
 @inject PizzaStoreContext DbContext
-
-<ul>
-    <li><a href="/kitchen/manage">Menu</a></li>
-    <li><a href="/station/kitchen">Kitchen</a></li>
-    <li><a href="/settings">Settings</a></li>
-    <li><a href="/toppings">Toppings</a></li>
-</ul>
-<div class="main">
-    <div class="card">
-        <div class="card-header">
-            <h1>Edit Toppings</h1>
-        </div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Price</th>
-                    <th></th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var topping in dbToppings)
-                {
+@if (IsAuthorised)
+{
+    <ul>
+        <li><a href="/kitchen/manage">Menu</a></li>
+        <li><a href="/station/kitchen">Kitchen</a></li>
+        <li><a href="/settings">Settings</a></li>
+        <li><a href="/toppings">Toppings</a></li>
+    </ul>
+    <div class="main">
+        <div class="card">
+            <div class="card-header">
+                <h1>Edit Toppings</h1>
+            </div>
+            <table class="table">
+                <thead>
                     <tr>
-                        <td><input @bind="@topping.Name" /></td>
-                        <td><input @bind="@topping.Price" /></td>
-                        <td><button @onclick="() => UpdateTopping(topping)">Save</button></td>
-                        <td><button @onclick="() => DeleteTopping(topping)">Delete</button></td>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th></th>
+                        <th></th>
                     </tr>
-                }
+                </thead>
+                <tbody>
+                    @foreach (var topping in dbToppings)
+                    {
+                        <tr>
+                            <td><input @bind="@topping.Name" /></td>
+                            <td><input @bind="@topping.Price" /></td>
+                            <td><button @onclick="() => UpdateTopping(topping)">Save</button></td>
+                            <td><button @onclick="() => DeleteTopping(topping)">Delete</button></td>
+                        </tr>
+                    }
 
-                <tr>
-                    <td><input @bind="@newTopping.Name" /></td>
-                    <td><input @bind="@newTopping.Price" /></td>
-                    <td><button @onclick="AddTopping">Add</button></td>
-                    <td></td>
-                </tr>
-            </tbody>
-        </table>
+                    <tr>
+                        <td><input @bind="@newTopping.Name" /></td>
+                        <td><input @bind="@newTopping.Price" /></td>
+                        <td><button @onclick="AddTopping">Add</button></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
+}
+@if (!IsAuthorised)
+{
+    <Authorise OnAuthorisedCallback="async () => {   dbToppings = DbContext.Toppings.Where(a => !a.IsDeleted).ToList(); IsAuthorised = true; }" Caller="this"></Authorise>
+}
 
 @code {
     List<Topping> dbToppings { get; set; }
     Topping newTopping = new Topping();
-
+    bool IsAuthorised { get; set; }
     protected override async Task OnInitializedAsync()
     {
         dbToppings = DbContext.Toppings.Where(a => !a.IsDeleted).ToList();
