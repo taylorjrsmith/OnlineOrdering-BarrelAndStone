@@ -249,7 +249,7 @@
     {
         int bufferWindow = settingsService.GetSetting<int>("Station|BufferWindow", 4);
         clearRequests = context.StationClearRequests.Where(a => a.RequestDate > DateTime.Now.AddHours(bufferWindow * -1) && a.StationId == stationId).ToList();
-        OrdersInProgress = await apiService.GetOrdersInProgress(bufferWindow);
+        OrdersInProgress = await apiService.GetOrdersInProgress(bufferWindow: bufferWindow);
         if (OrdersSeen.Count == 0)
         {
             OrdersSeen = OrdersInProgress.Select(a => a.OrderId).ToList();
